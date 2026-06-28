@@ -1,0 +1,46 @@
+name: tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Fetch memento engine (storage dependency)
+        run: |
+          # team-brain reuses memento's MemoryStorePG; the SQLite path is stdlib-only.
+          # If the repo isn't accessible, store-backed tests skip (logic tests still run).
+          git clone --depth 1 https://github.com/xerxes-y/memento.git "$RUNNER_TEMP/memento" \
+            || echo "memento not accessible — store-backed tests will skip"
+          echo "MEMENTO_ENGINE_REPO=$RUNNER_TEMP/memento" >> "$GITHUB_ENV"
+
+      - name: Install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest
+
+      - name: Run tests
+        env:
+          MEMENTO_DB_URL: ""   # force the local SQLite store (no Postgres in CI)
+        run: pytest -q
+
+  ci-success:
+    # Single stable status context for branch protection ("ci-success").
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "all test jobs passed"

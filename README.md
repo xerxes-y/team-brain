@@ -4,6 +4,9 @@
 
 # team-brain
 
+[![tests](https://github.com/xerxes-y/team-brain/actions/workflows/ci.yml/badge.svg)](https://github.com/xerxes-y/team-brain/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-5b5bf0.svg)](LICENSE)
+
 A **role-aware org knowledge assistant** that helps testers, developers, and
 product owners *solve problems* from one shared, deliberately-curated knowledge
 base — bridging the product-owner ↔ developer gap.

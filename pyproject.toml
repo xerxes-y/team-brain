@@ -18,6 +18,12 @@ dependencies = []
 # Claude-backed synthesis (TEAMBRAIN_SYNTH=teambrain.synth_claude:synth).
 # Connectors use only stdlib urllib, so they need no extra deps.
 synth = ["anthropic>=0.40"]
+# Postgres backend (MEMENTO_DB_URL=postgresql://...) — enables pgvector.
+postgres = ["psycopg[binary]>=3"]
+# Offline semantic embeddings (TEAMBRAIN_EMBED=local). The openai backend needs
+# no extra deps (stdlib REST). pgvector needs a dense embedder; without one,
+# search stays lexical.
+embed-local = ["sentence-transformers>=2.2"]
 test = ["pytest>=7"]
 
 [project.urls]
@@ -28,6 +34,7 @@ Documentation = "https://github.com/xerxes-y/team-brain/blob/main/docs/team-brai
 
 [project.scripts]
 team-brain = "mcp_server:main"
+team-brain-reindex = "teambrain.reindex:main"
 
 [tool.setuptools]
 py-modules = ["mcp_server"]

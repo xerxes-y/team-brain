@@ -51,9 +51,89 @@ tests/                     offline pytest suite (SQLite, mocked HTTP)
 ## Run
 
 ```bash
-export MEMENTO_DB_URL=postgresql://user:pass@host/db   # shared with memento; isolated by namespace
 python3 mcp_server.py                                   # stdio MCP server
 ```
+
+The storage backend is chosen at runtime from the environment:
+
+| `MEMENTO_DB_URL` | `TEAMBRAIN_EMBED` | backend | search |
+|---|---|---|---|
+| *unset* | — | local **SQLite** | lexical (BM25 + TF cosine, RRF) — used by tests/CI |
+| `postgresql://…` | *unset* | **Postgres** | lexical (BM25 tsvector + TF cosine, RRF) |
+| `postgresql://…` | `openai` / `local` | **Postgres + pgvector** | **semantic** (real embeddings, ANN `<=>`) fused with BM25 |
+
+### Agent-grade stack (recommended): shared Postgres + semantic vectors
+
+Best for using team-brain *as an agent backend* — shared across the team and
+retrieving by **meaning**, which is how an LLM asks questions.
+
+```bash
+# 1) start one Postgres+pgvector for the team (ships with memento)
+docker compose -f ../SkillOPT/team/docker-compose.yml up -d
+python3 -m pip install "psycopg[binary]"           # Postgres backend needs psycopg v3
+
+# 2) point team-brain at it (isolated from other teams by namespace)
+export MEMENTO_DB_URL=postgresql://memento:memento@localhost:5432/memento
+
+# 3) turn on real semantic embeddings — pick ONE:
+
+# (a) LOCAL, no API key — runs offline on CPU (recommended when you have no key)
+python3 -m pip install sentence-transformers
+export TEAMBRAIN_EMBED=local              # default model: BAAI/bge-small-en-v1.5 (384-d)
+
+# (b) OpenAI (or any OpenAI-compatible server via OPENAI_BASE_URL, e.g. Ollama)
+export TEAMBRAIN_EMBED=openai             # stdlib-only REST call, no extra deps
+export OPENAI_API_KEY=sk-...              # default model: text-embedding-3-small (1536-d)
+
+python3 mcp_server.py
+```
+
+> **Embeddings need an *embedding* model, not a chat agent.** A generative LLM
+> (Devin's IDE agent, Claude, etc.) returns text, not the numeric vectors
+> pgvector stores — so it can't be the embedder. With no API key, use
+> `TEAMBRAIN_EMBED=local` (offline) or point `OPENAI_BASE_URL` at a local
+> OpenAI-compatible server (Ollama `nomic-embed-text`, LM Studio, vLLM, …).
+> Chat LLMs belong on the **synthesis** seam (`TEAMBRAIN_SYNTH`), not here.
+
+### Swap the embedder by resource (demo → production)
+
+The embedder is an **adaptor**: pick a resource-tier *profile* and team-brain
+chooses backend + model + dimension for you. Start on `demo` (CPU/Apple-GPU, no
+key) for a laptop demo; as you get a GPU, change one env var — no code change.
+
+| `TEAMBRAIN_EMBED_PROFILE` | backend / model | dim | needs |
+|---|---|---|---|
+| `demo` (start here) | local `bge-small-en-v1.5` | 384 | CPU/MPS, ~0.3 GB, no key |
+| `cpu` | local `bge-base-en-v1.5` | 768 | CPU, a bit more RAM |
+| `gpu-small` | local `Qwen3-Embedding-4B` | 1024 | ~4–9 GB VRAM |
+| `gpu-large` | local `Qwen3-Embedding-8B` | 1024 | ~16 GB VRAM |
+| `server` | `openai` backend → `OPENAI_BASE_URL` | — | a shared GPU embed server (Ollama/vLLM/TEI) |
+
+```bash
+# laptop demo — no key, uses CPU or Apple-silicon GPU (MPS) automatically
+export MEMENTO_DB_URL=postgresql://memento:memento@localhost:5432/memento
+export TEAMBRAIN_EMBED_PROFILE=demo
+python3 mcp_server.py
+
+# later, on a GPU box — flip the profile, then re-embed existing rows
+export TEAMBRAIN_EMBED_PROFILE=gpu-small
+python3 -m teambrain.reindex          # rebuilds the pgvector column + re-encodes
+```
+
+Fine-grained overrides (any of these beat the profile):
+
+| env var | meaning | default |
+|---|---|---|
+| `TEAMBRAIN_EMBED` | `openai` · `local` · `none` | from profile / `none` |
+| `TEAMBRAIN_EMBED_MODEL` | model name | from profile |
+| `TEAMBRAIN_EMBED_DIM` | output dim (Matryoshka-truncated if supported) | from profile / native |
+| `TEAMBRAIN_EMBED_DEVICE` | `cpu` · `cuda` · `mps` (local) | auto-detected |
+| `OPENAI_API_KEY` / `OPENAI_BASE_URL` | cloud key / point at any compatible server | — |
+
+`local` uses `sentence-transformers` (`pip install sentence-transformers`; for
+GPU profiles install the matching `torch`). Switching model/dimension changes
+the vector space, so always run `python3 -m teambrain.reindex` afterwards — the
+dimension is baked into the pgvector column on first init.
 
 Synthesis is **pluggable**: without `TEAMBRAIN_SYNTH` set, `team_assist` returns
 an extractive answer (ranked snippets + citations) so the path runs with no LLM.

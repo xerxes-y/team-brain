@@ -47,13 +47,32 @@ def _bootstrap_memento() -> None:
         sys.path.insert(0, repo)
 
 
+def _is_pg(dsn: str) -> bool:
+    return dsn.startswith(("postgres://", "postgresql://"))
+
+
 def store():
-    """Lazily open (and cache) the shared memory store."""
+    """Lazily open (and cache) the shared memory store.
+
+    When ``MEMENTO_DB_URL`` is a Postgres DSN **and** a dense embedder is
+    configured (``TEAMBRAIN_EMBED``), we construct ``MemoryStorePG`` directly so
+    we can hand it the embedder — this is what flips memento's **pgvector** ANN
+    path on (real semantic ``<=>`` search instead of lexical cosine). In every
+    other case we defer to memento's own ``open_store`` (SQLite locally / in
+    tests, plain-lexical Postgres when no embedder is set)."""
     global _STORE
     if _STORE is None:
         _bootstrap_memento()
         import memento_memory
-        _STORE = memento_memory.open_store()
+        from .embed import make_dense_embedder
+
+        dsn = os.environ.get("MEMENTO_DB_URL", "")
+        dense = make_dense_embedder() if _is_pg(dsn) else None
+        if dense is not None:
+            import memento_memory_pg
+            _STORE = memento_memory_pg.MemoryStorePG(dsn, dense_embedder=dense)
+        else:
+            _STORE = memento_memory.open_store()
     return _STORE
 
 

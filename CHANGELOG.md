@@ -6,6 +6,33 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+### Added
+
+- **Semantic search (pgvector ANN)** — optional dense embedders (`teambrain/embed.py`)
+  that flip memento's pgvector path on. Env-driven via `TEAMBRAIN_EMBED`
+  (`openai` | `local` | `none`), `TEAMBRAIN_EMBED_MODEL`, `TEAMBRAIN_EMBED_DIM`.
+  - `local` — **no API key**, fully offline via `sentence-transformers`
+    (default `BAAI/bge-small-en-v1.5`, 384-d). The no-key default.
+  - `openai` — stdlib-only REST over `urllib`; works against any
+    OpenAI-compatible server via `OPENAI_BASE_URL` (Ollama, LM Studio, vLLM…).
+  - `store()` builds `MemoryStorePG` with the embedder when on Postgres, and
+    falls back cleanly to lexical SQLite otherwise.
+  - `pyproject` extras: `postgres` (`psycopg`), `embed-local`
+    (`sentence-transformers`). README documents the docker `pgvector` stack.
+  - Note: embeddings require an *embedding* model — a chat LLM (Devin, Claude)
+    can't be the embedder; chat models belong on the `TEAMBRAIN_SYNTH` seam.
+- **Embedder resource profiles (adaptor)** — `TEAMBRAIN_EMBED_PROFILE`
+  (`demo` | `cpu` | `gpu-small` | `gpu-large` | `server`) picks backend+model+dim
+  for a given resource tier; individual `TEAMBRAIN_EMBED*` vars still override.
+  Local backend now auto-detects device (`cuda`/`mps`/`cpu`, override with
+  `TEAMBRAIN_EMBED_DEVICE`) and supports Matryoshka dim truncation for Qwen3.
+  New `python3 -m teambrain.reindex` (console script `team-brain-reindex`)
+  rebuilds the pgvector column and re-embeds all rows after a model/dim switch.
+  Lets a demo run on a laptop (CPU/MPS, no key) and scale up to a GPU model with
+  one env-var change.
+
+### Pending
+
 - Pin the Devin ACP tap parser to real `session/prompt` / `session/update`
   frames once a captured session sample is available.
 

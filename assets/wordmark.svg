@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 760 200" width="760" height="200" role="img" aria-label="team-brain">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#5b5bf0"/>
+      <stop offset="1" stop-color="#9b6bff"/>
+    </linearGradient>
+  </defs>
+  <rect width="760" height="200" rx="28" fill="url(#bg)"/>
+  <!-- glyph (icon without its own background) -->
+  <g transform="translate(34,40) scale(0.235)">
+    <g stroke="#ffffff" stroke-width="5" stroke-linecap="round" opacity="0.55" fill="none">
+      <path d="M256 128 L160 168 M256 128 L352 168 M160 168 L118 256 M352 168 L394 256 M118 256 L160 344 M394 256 L352 344 M160 344 L256 384 M352 344 L256 384"/>
+      <path d="M160 168 L212 256 M118 256 L212 256 M160 344 L212 256"/>
+      <path d="M352 168 L300 256 M394 256 L300 256 M352 344 L300 256"/>
+      <path d="M256 128 L256 256 M256 384 L256 256"/>
+    </g>
+    <path d="M212 256 L256 256 L300 256" stroke="#ffd166" stroke-width="8" stroke-linecap="round" fill="none"/>
+    <g fill="#ffffff">
+      <circle cx="256" cy="128" r="15"/><circle cx="160" cy="168" r="15"/><circle cx="352" cy="168" r="15"/>
+      <circle cx="118" cy="256" r="15"/><circle cx="394" cy="256" r="15"/><circle cx="160" cy="344" r="15"/>
+      <circle cx="352" cy="344" r="15"/><circle cx="256" cy="384" r="15"/>
+      <circle cx="212" cy="256" r="16"/><circle cx="300" cy="256" r="16"/>
+    </g>
+    <circle cx="256" cy="256" r="22" fill="#ffd166"/>
+    <circle cx="256" cy="256" r="9" fill="#5b5bf0"/>
+  </g>
+  <!-- wordmark -->
+  <text x="196" y="98" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="62" letter-spacing="-1">
+    <tspan fill="#ffffff" fill-opacity="0.72" font-weight="400">team</tspan><tspan fill="#ffffff" font-weight="800">brain</tspan>
+  </text>
+  <text x="198" y="138" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="21" fill="#ffffff" fill-opacity="0.85">
+    one brain for testers · developers · POs
+  </text>
+  <text x="198" y="166" font-family="-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif" font-size="17" fill="#ffd166" fill-opacity="0.95">
+    bridging the product-owner ↔ developer gap
+  </text>
+</svg>

@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/wordmark.svg" alt="team-brain" width="600">
+</p>
+
 # team-brain
 
 A **role-aware org knowledge assistant** that helps testers, developers, and
@@ -139,3 +143,9 @@ export TEAMBRAIN_SYNTH=teambrain.synth_claude:synth ANTHROPIC_API_KEY=...
 
 pip install pytest && python3 -m pytest tests -q   # offline, SQLite-backed
 ```
+
+## License
+
+[MIT](LICENSE) © 2026 Khashayar Yadmand. team-brain reuses memento's
+`MemoryStorePG` as its storage engine and is designed to run `codebase-memory-mcp`
+(MIT) alongside it for the developer role (docs §7).

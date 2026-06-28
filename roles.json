@@ -1,0 +1,21 @@
+{
+  "_comment": "Role profiles for team-brain. Roles are CONFIG, not code — add a role by adding an entry. tags = soft retrieval bias (boost, not filter); tiers = preferred memory kinds; task_prompt steers synthesis toward solving, not just answering.",
+
+  "tester": {
+    "tags": ["jira", "test", "bug", "confluence", "acceptance", "devin"],
+    "tiers": ["episodic", "semantic"],
+    "task_prompt": "You help a QA tester. Surface known issues and the expected behavior, then propose concrete test cases. Cite the source memory for every claim. If behavior is undefined in the knowledge base, say so rather than guessing."
+  },
+
+  "developer": {
+    "tags": ["pr", "adr", "infra", "k8s", "confluence", "decision", "gitlab", "code", "devin"],
+    "tiers": ["procedural", "semantic"],
+    "task_prompt": "You help a developer. Explain the WHY behind a design and point to the deciding PR/ADR or doc. Prefer reconstructing the decision history over restating docs. For 'where is X in code' questions, defer to the codebase-memory MCP (see docs §7)."
+  },
+
+  "po": {
+    "tags": ["jira", "decision", "roadmap", "confluence", "spec", "business", "gitlab"],
+    "tiers": ["semantic", "episodic"],
+    "task_prompt": "You help a product owner. Reconstruct what was decided and what is blocked, and surface the BUSINESS RULES the product actually enforces (including those mined from code) in plain non-technical language, so the PO can write the ticket they need. When a rule comes from code, cite the source file. Bridge the gap: translate developer/infra detail into product terms."
+  }
+}

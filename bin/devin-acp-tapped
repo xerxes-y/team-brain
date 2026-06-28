@@ -1,0 +1,17 @@
+#!/bin/sh
+# team-brain ACP tap wrapper for Devin's `devin acp` agent (macOS / Linux).
+# Set this file as your IDE's ACP agent command in place of the bundled `devin`.
+# It forwards every byte verbatim and records the user<->LLM activity into
+# team-brain. The IDE's own args (e.g. `acp`) are passed through.
+#
+#   env knobs: TEAMBRAIN_NS          namespace (default team-eng)
+#              TEAMBRAIN_ACP_RECORD  raw frame log (default ~/devin-acp.jsonl)
+#              DEVIN_BIN             real agent path (auto-detected if unset)
+#              TEAMBRAIN_PYTHON      python interpreter (default python3)
+HERE=$(cd "$(dirname "$0")/.." && pwd)
+export PYTHONPATH="$HERE${PYTHONPATH:+:$PYTHONPATH}"
+PY="${TEAMBRAIN_PYTHON:-python3}"
+exec "$PY" -m teambrain.connectors.acp_tap \
+  --namespace "${TEAMBRAIN_NS:-team-eng}" \
+  --record "${TEAMBRAIN_ACP_RECORD:-$HOME/devin-acp.jsonl}" \
+  --devin-auto -- "$@"

@@ -1,0 +1,26 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "team-brain"
+version = "0.1.0"
+description = "Role-aware org knowledge assistant built on memento's MemoryStorePG"
+requires-python = ">=3.10"
+# No hard dependency pin on memento: it is imported at runtime from an installed
+# package or the sibling ../SkillOPT checkout (see teambrain/store.py bootstrap).
+# Postgres backend needs psycopg (pulled in by memento's own extras).
+dependencies = []
+
+[project.optional-dependencies]
+# Claude-backed synthesis (TEAMBRAIN_SYNTH=teambrain.synth_claude:synth).
+# Connectors use only stdlib urllib, so they need no extra deps.
+synth = ["anthropic>=0.40"]
+test = ["pytest>=7"]
+
+[project.scripts]
+team-brain = "mcp_server:main"
+
+[tool.setuptools]
+py-modules = ["mcp_server"]
+packages = ["teambrain", "teambrain.connectors"]

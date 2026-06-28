@@ -20,6 +20,12 @@ dependencies = []
 synth = ["anthropic>=0.40"]
 test = ["pytest>=7"]
 
+[project.urls]
+Homepage = "https://github.com/xerxes-y/team-brain"
+Repository = "https://github.com/xerxes-y/team-brain"
+Issues = "https://github.com/xerxes-y/team-brain/issues"
+Documentation = "https://github.com/xerxes-y/team-brain/blob/main/docs/team-brain.md"
+
 [project.scripts]
 team-brain = "mcp_server:main"
 

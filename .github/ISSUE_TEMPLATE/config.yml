@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Design & open decisions
+    url: https://github.com/xerxes-y/team-brain/blob/main/docs/team-brain.md
+    about: Read the design doc before proposing storage/architecture changes.
+  - name: Security concern (ACL / data leak)
+    url: https://github.com/xerxes-y/team-brain/security/advisories/new
+    about: Report privately — do NOT open a public issue for restricted-content leaks.

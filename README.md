@@ -147,6 +147,12 @@ export TEAMBRAIN_SYNTH=teambrain.synth_claude:synth ANTHROPIC_API_KEY=...
 pip install pytest && python3 -m pytest tests -q   # offline, SQLite-backed
 ```
 
+## Contributing
+
+See [CONTRIBUTING.md](CONTRIBUTING.md). The load-bearing rules: reuse memento's
+storage (don't rebuild it), keep ACL **fail-closed**, and keep connectors
+stdlib-only and offline-testable. `main` is protected — CI must pass.
+
 ## License
 
 [MIT](LICENSE) © 2026 Khashayar Yadmand. team-brain reuses memento's

@@ -141,6 +141,28 @@ Synthesis is **pluggable**: without `TEAMBRAIN_SYNTH` set, `team_assist` returns
 an extractive answer (ranked snippets + citations) so the path runs with no LLM.
 Point `TEAMBRAIN_SYNTH=module:function` at a real model call to get synthesis.
 
+### No Anthropic? You have three options
+
+team-brain never *requires* Anthropic. Embeddings already use local
+`sentence-transformers` (offline) or any OpenAI-compatible server, and both LLM
+seams degrade gracefully:
+
+| Want | Set | Needs |
+|---|---|---|
+| **No LLM at all** | (nothing) | extractive answers + heuristic code-mining — works offline, no keys |
+| **Local model** (no key, nothing leaves the box) | `TEAMBRAIN_SYNTH=teambrain.synth_openai:synth` + `OPENAI_BASE_URL=http://localhost:11434/v1` + `TEAMBRAIN_SYNTH_MODEL=llama3.1` | an Ollama/LM Studio/vLLM server |
+| **OpenAI / Azure / company gateway** | same `synth_openai` + `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | that endpoint |
+| **Anthropic** | `TEAMBRAIN_SYNTH=teambrain.synth_claude:synth` + `ANTHROPIC_API_KEY` | a Claude key |
+
+The same OpenAI-compatible backend can drive code→business extraction for the
+GitLab ingest: `TEAMBRAIN_CODE_SUMMARY=teambrain.synth_openai:summarize_code`
+(falls back to the offline heuristic if the endpoint is down).
+
+> **Note on Devin:** the Devin/Cognition agent is a *chat* model on the synthesis
+> seam, not an embedder — it can't produce the vectors pgvector needs. Use a
+> local embedder (or OpenAI-compatible embed server) for search; a local LLM for
+> synthesis.
+
 ### First local test
 
 A backend-agnostic smoke check (save → recall, ACL fail-closed, and — when an

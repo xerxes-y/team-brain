@@ -8,6 +8,13 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Provider-agnostic synthesis (no Anthropic needed)** — `teambrain/synth_openai.py`:
+  `synth` and `summarize_code` talk to any OpenAI-compatible chat endpoint over
+  stdlib `urllib` — a fully local Ollama/LM Studio/vLLM (no key), a company
+  gateway, Azure, or OpenAI. Wire via `TEAMBRAIN_SYNTH=teambrain.synth_openai:synth`
+  / `TEAMBRAIN_CODE_SUMMARY=teambrain.synth_openai:summarize_code`; both fall back
+  to extractive/heuristic if the endpoint is down. README documents the no-LLM /
+  local / cloud / Anthropic options.
 - **Company-GitLab ingest CLI** — `team-brain-gitlab` (`teambrain/ingest_gitlab.py`):
   mine one or more (self-hosted) GitLab projects' code into a namespace, with a
   `--public` opt-in to make a project's knowledge namespace-visible instead of

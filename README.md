@@ -139,6 +139,27 @@ Synthesis is **pluggable**: without `TEAMBRAIN_SYNTH` set, `team_assist` returns
 an extractive answer (ranked snippets + citations) so the path runs with no LLM.
 Point `TEAMBRAIN_SYNTH=module:function` at a real model call to get synthesis.
 
+### First local test
+
+A backend-agnostic smoke check (save → recall, ACL fail-closed, and — when an
+embedder is configured — a zero-overlap *semantic* match). It writes to a
+throwaway namespace and cleans up after itself:
+
+```bash
+# offline (local SQLite, lexical) — no setup needed
+python3 scripts/smoke_test.py
+
+# semantic stack (after the docker + env steps above)
+MEMENTO_DB_URL=postgresql://memento:memento@localhost:5432/memento \
+  TEAMBRAIN_EMBED_PROFILE=demo python3 scripts/smoke_test.py
+```
+
+And the unit suite (offline, SQLite-backed):
+
+```bash
+MEMENTO_DB_URL="" python3 -m pytest -q
+```
+
 ## Access control (default)
 
 ACL is encoded as `acl:<group>` **tags** — no change to memento's schema. A

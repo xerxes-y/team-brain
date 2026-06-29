@@ -8,6 +8,12 @@ to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Company-GitLab ingest CLI** — `team-brain-gitlab` (`teambrain/ingest_gitlab.py`):
+  mine one or more (self-hosted) GitLab projects' code into a namespace, with a
+  `--public` opt-in to make a project's knowledge namespace-visible instead of
+  the default fail-closed `acl:repo:<slug>` gate. `gitlab.sync_project(public=…)`
+  and a returned `acl_group`. Setup guide: `docs/setup-gitlab.md`. Plus
+  `scripts/smoke_test.py`, a backend-agnostic first-local-test.
 - **Semantic search (pgvector ANN)** — optional dense embedders (`teambrain/embed.py`)
   that flip memento's pgvector path on. Env-driven via `TEAMBRAIN_EMBED`
   (`openai` | `local` | `none`), `TEAMBRAIN_EMBED_MODEL`, `TEAMBRAIN_EMBED_DIM`.

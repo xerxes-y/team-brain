@@ -35,6 +35,7 @@ Documentation = "https://github.com/xerxes-y/team-brain/blob/main/docs/team-brai
 [project.scripts]
 team-brain = "mcp_server:main"
 team-brain-reindex = "teambrain.reindex:main"
+team-brain-gitlab = "teambrain.ingest_gitlab:main"
 
 [tool.setuptools]
 py-modules = ["mcp_server"]

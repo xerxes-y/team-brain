@@ -36,6 +36,8 @@ bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
+docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
+scripts/smoke_test.py      backend-agnostic first-local-test
 tests/                     offline pytest suite (SQLite, mocked HTTP)
 ```
 

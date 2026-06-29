@@ -157,17 +157,25 @@ def ingest_file(project: str, file_path: str, body: str, namespace: str,
 def sync_project(project: str, namespace: str, ref: str = "HEAD",
                  exts=None, max_files: int | None = None,
                  client: "GitLabClient | None" = None,
-                 summarize=code_summary.summarize) -> dict:
+                 summarize=code_summary.summarize, public: bool = False) -> dict:
     """Mine business knowledge from ONE GitLab project into ``namespace``.
 
     ``project`` is ``group/project`` (or a numeric id). Only ``exts`` files
-    outside vendored/test dirs are read; non-public projects are ACL-gated.
+    outside vendored/test dirs are read.
+
+    ACL: by default a private/internal project is gated with ``acl:repo:<slug>``
+    (fail-closed) — readers must present that group. Set ``public=True`` to make
+    the mined knowledge **visible to everyone in the namespace** — use this only
+    when you've decided the whole namespace audience is authorized to see the
+    project (e.g. an internal repo synced into your team's namespace).
+
     Returns a summary including ``files_seen``/``files_indexed``/``chunks``.
     """
     client = client or GitLabClient()
     exts = set(exts) if exts else CODE_EXTS
     vis = client.visibility(project)
-    acl_tags = [] if vis == "public" else [f"{_store.ACL_PREFIX}repo:{slug(project)}"]
+    gated = (vis != "public") and not public
+    acl_tags = [f"{_store.ACL_PREFIX}repo:{slug(project)}"] if gated else []
 
     seen = indexed = chunks = skipped = 0
     for entry in client.iter_tree(project, ref=ref):
@@ -189,4 +197,5 @@ def sync_project(project: str, namespace: str, ref: str = "HEAD",
             chunks += c
     return {"project": project, "namespace": namespace, "visibility": vis,
             "files_seen": seen, "files_indexed": indexed, "chunks": chunks,
-            "files_skipped_over_cap": skipped}
+            "files_skipped_over_cap": skipped,
+            "acl_group": (acl_tags[0][len(_store.ACL_PREFIX):] if acl_tags else None)}

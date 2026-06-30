@@ -16,30 +16,16 @@ cd team-brain && pip install -e .     # registers the `team-brain` command (pypr
 `pip install -e .` gives you a `team-brain` command that runs `mcp_server:main`.
 Skip it and call `python3 /abs/path/to/team-brain/mcp_server.py` instead — same result.
 
-### memento must be importable (most common setup error)
+### memento (the storage engine) comes with it
 
-team-brain does **not** bundle its storage engine — it imports `memento_memory`
-at runtime. If only team-brain is on the machine, you'll hit:
+team-brain imports memento at runtime. `pip install -e .` pulls it from git
+automatically (`devin-memento @ git+https://github.com/xerxes-y/memento.git`),
+so a fresh machine needs nothing extra.
 
-```
-ModuleNotFoundError: No module named 'memento_memory'
-```
-
-Fix it one of three ways (team-brain looks in this order — see `teambrain/store.py`):
-
-1. **pip-install memento** on the machine, or
-2. **clone memento as a sibling** so `../memento` resolves next to team-brain:
-   ```
-   parent/
-     team-brain/
-     memento/      <- memento checkout
-   ```
-3. **point at it explicitly** — set `MEMENTO_ENGINE_REPO=/abs/path/to/memento`
-   (in the MCP `env` block below). Use this when memento lives elsewhere.
-
-No version pin: team-brain uses whatever memento is on the path. It only needs
-`memento_memory.open_store()` and `memento_memory_pg.MemoryStorePG(dsn, dense_embedder=)`,
-both present in current memento.
+If you skipped pip and run `python3 mcp_server.py` straight from a clone, memento
+isn't installed — you'll hit `ModuleNotFoundError: No module named 'memento_memory'`.
+Then either `pip install -e .`, or put a memento checkout at `../memento`, or set
+`MEMENTO_ENGINE_REPO=/abs/path/to/memento` in the MCP `env` block below.
 
 ## 2. Register it in Devin's MCP settings
 

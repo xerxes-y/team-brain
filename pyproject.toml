@@ -9,10 +9,10 @@ description = "Role-aware org knowledge assistant built on memento's MemoryStore
 requires-python = ">=3.10"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
-# No hard dependency pin on memento: it is imported at runtime from an installed
-# package or the sibling ../memento checkout (see teambrain/store.py bootstrap).
-# Postgres backend needs psycopg (pulled in by memento's own extras).
-dependencies = []
+# memento is the storage engine. Pulled from git so a plain `pip install` works
+# on a fresh machine — no sibling checkout needed. (store.py still falls back to a
+# ../memento sibling for local dev.) Postgres/embed extras stay opt-in below.
+dependencies = ["devin-memento @ git+https://github.com/xerxes-y/memento.git"]
 
 [project.optional-dependencies]
 # Claude-backed synthesis (TEAMBRAIN_SYNTH=teambrain.synth_claude:synth).

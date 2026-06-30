@@ -40,6 +40,7 @@ teambrain/capture.py       deliberate end-of-work capture: chat -> memories (opt
 bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows)
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
+docs/devin-mcp.md          add team-brain to Devin as an MCP server (clone -> config -> /team-capture)
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
 docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
 scripts/smoke_test.py      backend-agnostic first-local-test

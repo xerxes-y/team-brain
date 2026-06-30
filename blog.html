@@ -20,6 +20,7 @@
 
   header{background:linear-gradient(135deg,#0f1117 0%,#1a1040 50%,#0f1117 100%);border-bottom:1px solid var(--border);padding:72px 24px 56px;text-align:center;position:relative;overflow:hidden}
   header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(123,107,255,0.18) 0%,transparent 70%);pointer-events:none}
+  .hero-logo{height:64px;width:auto;margin-bottom:24px;filter:drop-shadow(0 6px 24px rgba(123,107,255,.35))}
   .badge{display:inline-block;background:rgba(123,107,255,0.15);border:1px solid rgba(123,107,255,0.4);color:var(--accent2);padding:4px 14px;border-radius:99px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:22px}
   h1{font-size:clamp(30px,5vw,52px);font-weight:800;line-height:1.15;letter-spacing:-0.02em;margin-bottom:18px;background:linear-gradient(135deg,#fff 0%,var(--brand2) 55%,var(--brand1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
   .subtitle{font-size:19px;color:var(--muted);max-width:640px;margin:0 auto 28px}
@@ -95,12 +96,16 @@
   .demo-hint{text-align:center;color:var(--muted);font-size:13px;padding:10px}
 
   footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
+  .built-on{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+  .built-on img{height:44px;width:auto;border-radius:10px}
+  .built-on span{color:var(--muted);font-size:20px}
 </style>
 </head>
 <body>
 
 <header>
   <div class="wrap">
+    <img src="assets/wordmark.svg" alt="team-brain" class="hero-logo" />
     <span class="badge">Open source · MCP-native</span>
     <h1>One shared brain for the<br/>people who ship software</h1>
     <p class="subtitle">team-brain closes the product-owner ↔ developer ↔ tester gap. It captures the knowledge your team already produces while working — and answers questions, with citations, in each role's own language.</p>
@@ -129,7 +134,7 @@
       <div class="card po">
         <span class="tag">Product Owner</span>
         <h3>team_draft_ticket</h3>
-        <p class="muted">"I need a ticket for the refund flow." It mines business rules straight from the codebase and GitLab — so a PO who doesn't read Java still writes an accurate ticket.</p>
+        <p class="muted">"I need a ticket to finalize type-2 cash transfers." It mines the rules straight from the codebase and GitLab — so a PO who doesn't read Java still writes an accurate ticket.</p>
       </div>
       <div class="card dev">
         <span class="tag">Developer</span>
@@ -146,10 +151,10 @@
 
   <section id="demo">
     <h2>See it work — <span class="em">live, right here</span></h2>
-    <p class="muted">A real scenario: ticket <strong>SHOP-42</strong> (refunds). The team already captured what it knew while working — shown on the left. Pick a role, ask a question, and watch team-brain answer in that role's language, citing the exact memory it used. Notice the <strong>tester</strong>'s question gets answered by a <strong>developer</strong>'s note — different words, same meaning.</p>
+    <p class="muted">A Processing &amp; Settlement scenario: ticket <strong>SETL-204</strong> — auto-finalize cash transfers when a settlement message arrives from the reconciliation service, across several custodian banks with different message formats. The PO wrote it, a developer did the pre-implementation investigation, a tester owns the test ticket. Each captured what they learned. Pick a role, ask a question — and watch the <strong>tester</strong>'s "what should I test?" surface the <strong>developer</strong>'s buried gotcha that would silently mis-book transfers.</p>
 
     <div class="demo">
-      <div class="demo-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">team-brain · namespace: shop-eng</span></div>
+      <div class="demo-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">team-brain · namespace: settlement-ops</span></div>
       <div class="demo-body">
         <div class="demo-left">
           <div class="roles">
@@ -159,7 +164,7 @@
           </div>
           <div class="q-label">Ask a question</div>
           <div id="qs"></div>
-          <div class="kb-title">What the team captured (SHOP-42)</div>
+          <div class="kb-title">What the team captured (SETL-204)</div>
           <div id="kb"></div>
         </div>
         <div class="demo-right">
@@ -189,7 +194,7 @@
         <h3>Deliberate capture</h3>
         <p class="muted">When a PO finishes analysing a ticket, or a dev finishes implementing one, push the decisions and gotchas in one move — tagged to the ticket so the role bridges pick them up instantly.</p>
         <pre><code><span class="tok-c"># inside the IDE chat — one of:</span>
-<span class="tok-k">/team-capture</span> ticket=SHOP-42 role=developer
+<span class="tok-k">/team-capture</span> ticket=SETL-204 role=developer
 <span class="tok-c"># …or just say:</span>
 <span class="tok-s">"start saving team-brain"</span></code></pre>
         <p class="muted">Both nudge the agent to call <code>team_capture</code>; it extracts the Jira key, distills the chat into facts, and stores them as searchable vectors.</p>
@@ -199,14 +204,15 @@
 
   <section>
     <h2>Ask it anything — <span class="em">get a cited answer</span></h2>
-    <p><code>team_assist(query, role)</code> retrieves by <strong>meaning</strong>, not keywords, so a tester asking "why does a long checkout fail?" finds the developer's note about "auth token expires after 30 min" — zero shared words.</p>
-    <pre><code><span class="tok-k">&gt;</span> team_assist("why does a long checkout fail?", role="tester")
+    <p><code>team_assist(query, role)</code> retrieves by <strong>meaning</strong>, not keywords, so a tester asking "what's the riskiest edge case?" finds the developer's note about matching the <em>counterparty</em> account — zero shared words.</p>
+    <pre><code><span class="tok-k">&gt;</span> team_assist("riskiest edge case for type-2 finalize?", role="tester")
 
-A cart that sits open past ~30 minutes fails because the payment
-auth token expires; checkout retries 3× then locks the cart. [1]
+The source account is the SAME shared clearing account on every
+type-2 row, so matching on it silently mis-books some custodians —
+the real discriminator is the counterparty account. [1]
 
 <span class="tok-c">Sources:
-  [1] Note on SHOP-42  (mem-fb94a17239e1)</span></code></pre>
+  [1] Investigation note on SETL-204  (mem-9a3f…)</span></code></pre>
     <p class="muted">Every answer carries citations back to the source memory. No synthesis model configured? You still get the ranked, cited snippets — retrieval works without an LLM.</p>
   </section>
 
@@ -280,37 +286,52 @@ pip install git+https://github.com/xerxes-y/team-brain.git
 </main>
 
 <footer>
-  <p>team-brain · MIT licensed · built on <a href="https://github.com/xerxes-y/memento">memento</a></p>
+  <div class="built-on">
+    <img src="assets/logo.svg" alt="team-brain" />
+    <span>×</span>
+    <a href="https://github.com/xerxes-y/memento"><img src="assets/memento-logo.svg" alt="memento" /></a>
+  </div>
+  <p>team-brain · MIT licensed · storage engine by <a href="https://github.com/xerxes-y/memento">memento</a></p>
   <p><a href="https://github.com/xerxes-y/team-brain">github.com/xerxes-y/team-brain</a></p>
 </footer>
 
 <script>
 (function(){
-  // seeded knowledge for ticket SHOP-42 — what the team captured while working
+  // seeded knowledge for SETL-204 — captured by the PO, the developer's investigation, and the tester.
+  // Generic settlement scenario: no company, names, account numbers, or internal ticket IDs.
   const MEM = {
-    a1:{role:'po',        title:'Refund window (business rule)', text:'Refunds allowed within 14 days of delivery; after that, store credit only.'},
-    b2:{role:'developer', title:'Checkout token gotcha',         text:'Payment auth token expires after 30 min; checkout retries 3× then locks the cart.'},
-    c3:{role:'developer', title:'PR #218 — why',                 text:'Moved the refund-eligibility check server-side; the client clock was being trusted and abused.'}
+    intent:{role:'po', title:'SETL-204 — what it delivers',
+      text:'When a settlement message arrives from the reconciliation service, auto-finalize cash transfers of type 2/3: match the transfer, book it (status → booked), and send a reply back to recon. Extends the existing type-8 finalize flow.'},
+    formats:{role:'developer', title:'Investigation — message format differs per custodian',
+      text:'Each custodian bank sends a different settlement message. Bank A: numeric client id + a transfer-id in the comment field. Banks B and C: a clearing-route code and no comment at all — so comment-based matching only works for Bank A.'},
+    iban:{role:'developer', title:'⚠ Gotcha — match the counterparty account, NOT the source',
+      text:'On every type-2 row the transfer\'s source account is ALWAYS the shared clearing account. Match on it and Bank B / C transfers silently mis-book. The field that actually discriminates the custodian is the counterparty account.'},
+    match:{role:'developer', title:'Matching strategy per custodian',
+      text:'Bank A: pull the transfer-id from the comment → find by id + status. Banks B/C: resolve the account via the lookup API by clearing route, then match counterparty account + currency + amount×(-1) + status.'},
+    open:{role:'po', title:'Open question for the BA',
+      text:'Which lookup endpoint resolves the account for Bank C\'s clearing route? Bank C\'s section was added to the spec late and has no code branch yet — confirm before estimating.'},
+    updates:{role:'developer', title:'Update steps (same for all custodians)',
+      text:'After a match: set the recon reference id on the transaction, remap the cash-account id, set the date from the message, flip the transfer status to booked, then send a reply message {id, transaction_id} back to recon.'}
   };
   // per-role preset questions -> {tool, cites:[memIds], answer (uses [n] markers)}
   const Q = {
     po:[
-      {q:'Draft a ticket for the refund flow', tool:'team_draft_ticket', cites:['a1','c3'],
-       a:'Refund flow — acceptance criteria, sourced from the codebase:\n• Refund is allowed within 14 days of delivery; afterwards only store credit. [1]\n• Eligibility must be checked server-side — the client clock was previously trusted and abused. [2]'},
-      {q:'What rules govern refunds?', tool:'team_assist', cites:['a1'],
-       a:'Refunds are permitted within 14 days of delivery. Past that window, customers receive store credit rather than a cash refund. [1]'}
+      {q:'Summarise SETL-204 for me', tool:'team_explain_ticket', cites:['intent','match'],
+       a:'SETL-204 auto-finalizes cash transfers of type 2/3, the way the type-8 flow already does. [1]\nTrigger: a settlement message arrives from recon when a transfer clears at a custodian; the workflow matches the row, books it, and replies to recon. [1]\nThe matching logic differs per custodian bank. [2]'},
+      {q:'What\'s still blocking this ticket?', tool:'team_assist', cites:['open'],
+       a:'One open question for the BA: which lookup endpoint resolves the account for Bank C\'s clearing route. Bank C was added to the spec late and has no code branch yet — worth confirming before estimating. [1]'}
     ],
     developer:[
-      {q:'Explain ticket SHOP-42', tool:'team_explain_ticket', cites:['a1','b2','c3'],
-       a:'SHOP-42 — refunds.\nIntent: allow refunds within 14 days of delivery, store credit after. [1]\nCode you\'ll touch: eligibility check lives server-side (PR #218 moved it there — the client clock was abused). [3]\nWatch out: the payment auth token expires after 30 min; checkout retries 3× then locks the cart. [2]'},
-      {q:'Where is refund eligibility decided?', tool:'team_assist', cites:['c3'],
-       a:'Server-side, as of PR #218 — it was moved off the client because the client clock was being trusted and abused. [1]'}
+      {q:'How do I tell the custodian banks apart?', tool:'team_explain_ticket', cites:['iban','formats'],
+       a:'Don\'t key off the source account — on every type-2 row it\'s ALWAYS the shared clearing account. Discriminate on the counterparty account instead. [1]\nThe messages also differ: Bank A sends a numeric client id + a transfer-id in the comment; Banks B and C send a clearing-route code and no comment. [2]'},
+      {q:'What are the update steps after a match?', tool:'team_assist', cites:['updates'],
+       a:'Same for every custodian: set the recon reference id on the transaction, remap the cash-account id, set the date from the message, flip the transfer status to booked, then send a reply {id, transaction_id} back to recon. [1]'}
     ],
     tester:[
-      {q:'Why does a long checkout fail?', tool:'team_assist', cites:['b2'],
-       a:'A cart left open too long fails because the payment auth token expires after ~30 minutes; checkout then retries 3× and locks the cart. [1]\n\n↳ a tester question, answered by a developer\'s note — matched by meaning, not keywords.'},
-      {q:'What should I test for refunds?', tool:'team_test_plan', cites:['a1','c3'],
-       a:'Test plan for SHOP-42:\n• Refund accepted on day 14, store credit on day 15 (boundary). [1]\n• Tampered/forward client clock must NOT grant a refund — eligibility is server-side. [2]\n• Refund attempt after the 30-min token expiry path.'}
+      {q:'What should I test for type-2 finalize?', tool:'team_test_plan', cites:['iban','match','updates'],
+       a:'Test plan:\n• Critical: confirm Bank B / C rows match on the counterparty account — because the source account is ALWAYS the shared clearing account, a source-based match would wrongly book them. [1]\n• Each custodian\'s matching path: Bank A via the comment transfer-id, Banks B/C via the clearing-route lookup. [2]\n• After booking: reference id set, cash-account id remapped, status = booked, reply sent to recon. [3]'},
+      {q:'What\'s the riskiest edge case here?', tool:'team_assist', cites:['iban'],
+       a:'The silent one: the source account is the SAME shared clearing account on every type-2 row, so any logic that matches on the source account will happily mis-book Bank B and C transfers. The real discriminator is the counterparty account. [1]\n\n↳ a tester question, answered straight from the developer\'s investigation note — matched by meaning.'}
     ]
   };
 

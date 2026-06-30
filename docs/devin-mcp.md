@@ -29,6 +29,20 @@ Then either `pip install -e .`, or put a memento checkout at `../memento`, or se
 
 ## 2. Register it in Devin's MCP settings
 
+### Easiest: `team-brain init`
+
+```bash
+team-brain init
+```
+
+It asks a few questions (shared Postgres DSN or blank for a solo SQLite trial,
+embedder, optional Claude answers), writes `team-brain.mcp.json`, and prints the
+exact MCP block to paste plus the capture-trigger instruction for the agent's
+rules. Then paste that block into Devin's MCP config (or point Devin's config
+file at the generated JSON) and restart the MCP connection.
+
+### Manual
+
 Add one server to Devin's MCP config (the same JSON shape every MCP client uses).
 Put the shared-store env vars in the `env` block so this server talks to the team
 Postgres, not a local SQLite:

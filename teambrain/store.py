@@ -34,14 +34,14 @@ _STORE = None
 
 def _bootstrap_memento() -> None:
     """Make ``memento_memory`` importable: prefer an installed package, else the
-    sibling ``../SkillOPT`` checkout (override with ``MEMENTO_ENGINE_REPO``)."""
+    sibling ``../memento`` checkout (override with ``MEMENTO_ENGINE_REPO``)."""
     try:
         import memento_memory  # noqa: F401  (already importable)
         return
     except ImportError:
         pass
     repo = os.environ.get("MEMENTO_ENGINE_REPO") or os.path.abspath(
-        os.path.join(os.path.dirname(__file__), "..", "..", "SkillOPT")
+        os.path.join(os.path.dirname(__file__), "..", "..", "memento")
     )
     if os.path.isdir(repo) and repo not in sys.path:
         sys.path.insert(0, repo)

@@ -21,7 +21,7 @@ python3 -m pip install -e .
 
 # storage engine (memento); SQLite path is stdlib-only
 git clone https://github.com/xerxes-y/memento.git ../memento
-export MEMENTO_ENGINE_REPO="$PWD/../memento"     # or place it as ../SkillOPT
+export MEMENTO_ENGINE_REPO="$PWD/../memento"     # or place it as ../memento
 ```
 
 ## 3. Point at your company GitLab

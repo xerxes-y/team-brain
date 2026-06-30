@@ -11,7 +11,7 @@ A **role-aware org knowledge assistant** that helps testers, developers, and
 product owners *solve problems* from one shared, deliberately-curated knowledge
 base — bridging the product-owner ↔ developer gap.
 
-> Sibling of [memento](../SkillOPT). team-brain **reuses memento's
+> Sibling of [memento](../memento). team-brain **reuses memento's
 > `MemoryStorePG`** (Postgres: BM25 tsvector + pgvector, RRF, namespaces, entity
 > graph, audit) as its storage engine. It does **not** ship its own store.
 > Full design: [`docs/team-brain.md`](docs/team-brain.md).
@@ -77,7 +77,7 @@ retrieving by **meaning**, which is how an LLM asks questions.
 
 ```bash
 # 1) start one Postgres+pgvector for the team (ships with memento)
-docker compose -f ../SkillOPT/team/docker-compose.yml up -d
+docker compose -f ../memento/team/docker-compose.yml up -d
 python3 -m pip install "psycopg[binary]"           # Postgres backend needs psycopg v3
 
 # 2) point team-brain at it (isolated from other teams by namespace)

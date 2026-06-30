@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 license = {file = "LICENSE"}
 classifiers = ["License :: OSI Approved :: MIT License"]
 # No hard dependency pin on memento: it is imported at runtime from an installed
-# package or the sibling ../SkillOPT checkout (see teambrain/store.py bootstrap).
+# package or the sibling ../memento checkout (see teambrain/store.py bootstrap).
 # Postgres backend needs psycopg (pulled in by memento's own extras).
 dependencies = []
 

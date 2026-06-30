@@ -1,7 +1,7 @@
 # Team Brain — Design
 
 **Status:** draft / pre-implementation
-**Sibling of:** `../SkillOPT` (memento). Reuses memento's `MemoryStorePG` as the storage engine.
+**Sibling of:** `../memento` (memento). Reuses memento's `MemoryStorePG` as the storage engine.
 **One line:** A role-aware assistant that helps testers, developers, and product owners solve problems from one shared, deliberately-curated org knowledge base — bridging the PO↔developer knowledge gap.
 
 ---

@@ -28,11 +28,11 @@ ModuleNotFoundError: No module named 'memento_memory'
 Fix it one of three ways (team-brain looks in this order — see `teambrain/store.py`):
 
 1. **pip-install memento** on the machine, or
-2. **clone memento as a sibling** so `../SkillOPT` resolves next to team-brain:
+2. **clone memento as a sibling** so `../memento` resolves next to team-brain:
    ```
    parent/
      team-brain/
-     SkillOPT/      <- memento checkout
+     memento/      <- memento checkout
    ```
 3. **point at it explicitly** — set `MEMENTO_ENGINE_REPO=/abs/path/to/memento`
    (in the MCP `env` block below). Use this when memento lives elsewhere.
@@ -65,7 +65,7 @@ Postgres, not a local SQLite:
 ```
 
 - `MEMENTO_ENGINE_REPO` — path to the memento checkout. Drop it if memento is
-  pip-installed or sits at `../SkillOPT`. See "memento must be importable" above.
+  pip-installed or sits at `../memento`. See "memento must be importable" above.
 - `MEMENTO_DB_URL` — **the important one.** Point every teammate's server at the
   same Postgres+pgvector, or the brain isn't shared. Omit it and you get a local
   SQLite file (fine for a solo test, useless for a team).

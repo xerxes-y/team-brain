@@ -28,7 +28,7 @@ cd team-brain
 python3 -m pip install -e .
 # storage engine (sibling repo); SQLite path is stdlib-only:
 git clone https://github.com/xerxes-y/memento.git ../memento
-export MEMENTO_ENGINE_REPO="$PWD/../memento"   # or place memento as ../SkillOPT
+export MEMENTO_ENGINE_REPO="$PWD/../memento"   # or place memento as ../memento
 pip install pytest
 ```
 

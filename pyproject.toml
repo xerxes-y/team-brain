@@ -12,7 +12,7 @@ classifiers = ["License :: OSI Approved :: MIT License"]
 # memento is the storage engine. Pulled from git so a plain `pip install` works
 # on a fresh machine — no sibling checkout needed. (store.py still falls back to a
 # ../memento sibling for local dev.) Postgres/embed extras stay opt-in below.
-dependencies = ["devin-memento @ git+https://github.com/xerxes-y/memento.git"]
+dependencies = ["devin-memento @ git+https://github.com/xerxes-y/memento.git@224935b483596d44e7db5dd7637d6ba6690c4073"]
 
 [project.optional-dependencies]
 # Claude-backed synthesis (TEAMBRAIN_SYNTH=teambrain.synth_claude:synth).

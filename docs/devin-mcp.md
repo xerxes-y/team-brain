@@ -16,6 +16,31 @@ cd team-brain && pip install -e .     # registers the `team-brain` command (pypr
 `pip install -e .` gives you a `team-brain` command that runs `mcp_server:main`.
 Skip it and call `python3 /abs/path/to/team-brain/mcp_server.py` instead — same result.
 
+### memento must be importable (most common setup error)
+
+team-brain does **not** bundle its storage engine — it imports `memento_memory`
+at runtime. If only team-brain is on the machine, you'll hit:
+
+```
+ModuleNotFoundError: No module named 'memento_memory'
+```
+
+Fix it one of three ways (team-brain looks in this order — see `teambrain/store.py`):
+
+1. **pip-install memento** on the machine, or
+2. **clone memento as a sibling** so `../SkillOPT` resolves next to team-brain:
+   ```
+   parent/
+     team-brain/
+     SkillOPT/      <- memento checkout
+   ```
+3. **point at it explicitly** — set `MEMENTO_ENGINE_REPO=/abs/path/to/memento`
+   (in the MCP `env` block below). Use this when memento lives elsewhere.
+
+No version pin: team-brain uses whatever memento is on the path. It only needs
+`memento_memory.open_store()` and `memento_memory_pg.MemoryStorePG(dsn, dense_embedder=)`,
+both present in current memento.
+
 ## 2. Register it in Devin's MCP settings
 
 Add one server to Devin's MCP config (the same JSON shape every MCP client uses).
@@ -28,6 +53,7 @@ Postgres, not a local SQLite:
     "team-brain": {
       "command": "team-brain",
       "env": {
+        "MEMENTO_ENGINE_REPO": "/abs/path/to/memento",
         "MEMENTO_DB_URL": "postgresql://memento:memento@db.internal:5432/memento",
         "TEAMBRAIN_EMBED": "local",
         "TEAMBRAIN_SYNTH": "teambrain.synth_claude:synth",
@@ -38,6 +64,8 @@ Postgres, not a local SQLite:
 }
 ```
 
+- `MEMENTO_ENGINE_REPO` — path to the memento checkout. Drop it if memento is
+  pip-installed or sits at `../SkillOPT`. See "memento must be importable" above.
 - `MEMENTO_DB_URL` — **the important one.** Point every teammate's server at the
   same Postgres+pgvector, or the brain isn't shared. Omit it and you get a local
   SQLite file (fine for a solo test, useless for a team).

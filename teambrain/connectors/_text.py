@@ -9,6 +9,21 @@ from __future__ import annotations
 
 import re
 
+# Jira-style issue key: project (UPPERCASE/digits, starts with a letter) + number.
+_TICKET_RE = re.compile(r"\b([A-Z][A-Z0-9]+-\d+)\b")
+
+
+def ticket_keys(*texts) -> list:
+    """Jira issue keys mentioned across ``texts`` (branch name, commit message,
+    chat, …), de-duplicated and order-preserving — the link from work to a ticket."""
+    seen, out = set(), []
+    for t in texts:
+        for m in _TICKET_RE.findall(t or ""):
+            if m not in seen:
+                seen.add(m)
+                out.append(m)
+    return out
+
 
 def slug(value) -> str:
     """Make a tag-safe token: no spaces (memento tags are space/comma-delimited,

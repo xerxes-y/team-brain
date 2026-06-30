@@ -29,9 +29,14 @@ teambrain/
   connectors/pr.py         GitHub: merged-PR "why" + private-repo ACL
   connectors/gitlab.py     mine BUSINESS RULES from a GitLab codebase for the PO
   connectors/devin.py      ingest Devin CLI activity (sessions.db + JSON exports)
+  connectors/intellij.py   ingest a local IntelliJ project: git commits + TODO/FIXME notes
   connectors/acp_tap.py    LIVE Devin (ACP) stdio tap -> records turns as they happen
   connectors/_text.py      shared chunk/slug helpers
-mcp_server.py              MCP: team_assist / team_remember / team_sources / team_sync / team_draft_ticket
+mcp_server.py              MCP: team_assist / team_remember / team_sources / team_sync
+                                / team_draft_ticket (PO) / team_explain_ticket (dev) / team_test_plan (tester)
+                                / team_capture (push the important bits of a chat to the brain, tagged to a ticket)
+                           MCP prompt `team-capture` -> `/team-capture` slash command in clients that render prompts
+teambrain/capture.py       deliberate end-of-work capture: chat -> memories (optional distill)
 bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows)
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
@@ -248,6 +253,12 @@ python3 -c "from teambrain.connectors.gitlab import sync_project; \
 python3 -c "from teambrain.connectors.devin import sync; \
   print(sync(namespace='team-eng'))"
 
+# IntelliJ — capture a local project's git commits + TODO/FIXME notes (no creds)
+#   key = project path. Jira keys in branch/commit/TODO -> ticket:<KEY> tags (PO<->dev bridge).
+#   web_base turns SHAs into src: commit links; acl_groups scopes a private project (fail-closed).
+python3 -c "from teambrain.connectors.intellij import sync; \
+  print(sync('/path/to/intellij/project', namespace='team-eng'))"
+
 # Devin LIVE — when the build persists nothing locally and only talks ACP.
 #   Both modes forward verbatim (Devin is unaffected) and record turns;
 #   --record dumps raw JSON-RPC frames (the schema sample) for tightening the parser.
@@ -265,6 +276,12 @@ python3 -m teambrain.connectors.acp_tap --namespace team-eng --record ~/devin-ac
 #   macOS/Linux: bin/devin-acp-tapped     Windows: bin\devin-acp-tapped.cmd
 #   (auto-detects the devin binary). Full wiring per OS: docs/devin-acp-tap.md
 #   To run the tap/wrapper from anywhere:  python3 -m pip install -e .
+
+# Capture a chat into the brain — from inside the IDE agent (Devin/IntelliJ), not the shell.
+#   Trigger phrase: tell the agent "start saving team-brain" (add an instruction to its config:
+#     -> call the team_capture MCP tool with this chat's decisions/rules, ticket=<KEY>, role=...).
+#   Or /team-capture if the client renders MCP prompts as slash commands (Devin support: verify).
+#   Read it back the only meaningful way (embed+search+ACL, not raw SQL): team_assist.
 
 # Real cited answers + sharp business extraction via Claude (else: extractive / heuristic)
 export TEAMBRAIN_SYNTH=teambrain.synth_claude:synth ANTHROPIC_API_KEY=...

@@ -23,6 +23,9 @@ import sys
 from teambrain import store as _store
 from teambrain.assist import assist as _assist
 from teambrain.assist import draft_ticket as _draft_ticket
+from teambrain.assist import explain_ticket as _explain_ticket
+from teambrain.assist import test_plan as _test_plan
+from teambrain.capture import capture as _capture
 
 PROTOCOL_VERSION = "2024-11-05"
 
@@ -76,19 +79,20 @@ TOOLS = [
     },
     {
         "name": "team_sync",
-        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin; key is the space key / project key / 'owner/repo' / 'group/project' (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity. Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
+        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin|intellij; key is the space key / project key / 'owner/repo' / 'group/project' / local project path (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity; intellij ingests a local IntelliJ project's git commits + TODO/FIXME notes (key=project path; optional web_base for commit back-links). Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
         "schema": {
             "type": "object",
             "properties": {
-                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin"]},
-                "key": {"type": "string", "description": "space key | project key | owner/repo | group/project (not used by devin)"},
+                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin", "intellij"]},
+                "key": {"type": "string", "description": "space key | project key | owner/repo | group/project | local project path (not used by devin)"},
                 "namespace": {"type": "string"},
-                "since": {"type": "string", "description": "incremental checkpoint (CQL/JQL date, ISO updated_at, or ISO transcript time); not used by gitlab"},
+                "since": {"type": "string", "description": "incremental checkpoint (CQL/JQL date, ISO updated_at, ISO transcript time, or git date); not used by gitlab"},
                 "labels": {"type": "array", "items": {"type": "string"},
                            "description": "confluence only: restrict to these labels"},
                 "max_files": {"type": "integer", "description": "gitlab only: cap files mined"},
+                "web_base": {"type": "string", "description": "intellij only: repo web URL to turn commit SHAs into src: links"},
                 "groups": {"type": "array", "items": {"type": "string"},
-                           "description": "devin only: scope ingested sessions to these groups (acl:*)"},
+                           "description": "devin/intellij only: scope ingested memories to these groups (acl:*)"},
             },
             "required": ["source", "namespace"],
         },
@@ -106,6 +110,54 @@ TOOLS = [
                 "limit": {"type": "integer"},
             },
             "required": ["query", "namespace"],
+        },
+    },
+    {
+        "name": "team_explain_ticket",
+        "description": "Developer-facing reverse bridge: given a Jira ticket (key and/or text), explain the BUSINESS logic in plain terms and point to the code/PRs/commits that implement it — for a developer who doesn't speak the business language. Boosts memories linked to the ticket (Jira issue + IntelliJ commits/TODOs that referenced the key). ACL-gated, cited.",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "ticket": {"type": "string", "description": "Jira key (e.g. ABC-123) and/or the ticket text"},
+                "namespace": {"type": "string"},
+                "groups": {"type": "array", "items": {"type": "string"},
+                           "description": "asker's groups, for ACL (omit => public only)"},
+                "limit": {"type": "integer"},
+            },
+            "required": ["ticket", "namespace"],
+        },
+    },
+    {
+        "name": "team_test_plan",
+        "description": "Tester-facing both-sides bridge: a tester's questions span the developer AND the product owner. Retrieves across BOTH (business rules/acceptance/decisions + code/PRs/commits) and reconciles EXPECTED vs ACTUAL behavior into concrete test cases (incl. edge cases) — so the tester gets one cited answer instead of chasing two people. ACL-gated.",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "feature/ticket/behavior to test (a Jira key boosts linked work)"},
+                "namespace": {"type": "string"},
+                "groups": {"type": "array", "items": {"type": "string"},
+                           "description": "asker's groups, for ACL (omit => public only)"},
+                "limit": {"type": "integer"},
+            },
+            "required": ["query", "namespace"],
+        },
+    },
+    {
+        "name": "team_capture",
+        "description": "End-of-work capture: push the important parts of THIS chat (decisions, business rules, gotchas a PO or developer figured out while working a ticket) into the team brain. Pass ticket=<Jira key> so it's tagged ticket:<KEY> and surfaces in team_explain_ticket / team_test_plan. role=tester|developer|po biases later retrieval; groups=[...] scopes it (acl:*). Optionally distills the text into discrete facts (TEAMBRAIN_DISTILL), else stores it chunked.",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "text": {"type": "string", "description": "the important chat content to remember"},
+                "namespace": {"type": "string"},
+                "ticket": {"type": "string", "description": "Jira key and/or text this knowledge belongs to"},
+                "role": {"type": "string", "enum": ["tester", "developer", "po"],
+                         "description": "who captured it (retrieval bias)"},
+                "groups": {"type": "array", "items": {"type": "string"},
+                           "description": "ACL scope (omit => public in the namespace)"},
+                "title": {"type": "string", "description": "optional title for the stored note(s)"},
+            },
+            "required": ["text", "namespace"],
         },
     },
 ]
@@ -168,6 +220,10 @@ def _team_sync(a: dict) -> str:
     elif source == "devin":
         from teambrain.connectors.devin import sync
         res = sync(ns, since=since, acl_groups=a.get("groups"))
+    elif source == "intellij":
+        from teambrain.connectors.intellij import sync
+        res = sync(key, ns, since=since, web_base=a.get("web_base"),
+                   acl_groups=a.get("groups"))
     else:
         return f"[team-brain] unknown source: {source}"
     what = f"{source} '{key}'" if key else source
@@ -185,9 +241,68 @@ def _team_draft_ticket(a: dict) -> str:
     return f"{res['ticket']}{tail}{note}"
 
 
+def _team_explain_ticket(a: dict) -> str:
+    res = _explain_ticket(a.get("ticket"), a.get("namespace"),
+                          asker_groups=a.get("groups"), limit=a.get("limit") or 8)
+    cites = "\n".join(f"  [{c['n']}] {c['title']}"
+                      + (f" — {c['url']}" if c.get("url") else "")
+                      for c in res["citations"])
+    tail = f"\n\nSources:\n{cites}" if cites else ""
+    note = f"\n({res['hidden_by_acl']} hidden by ACL)" if res["hidden_by_acl"] else ""
+    return f"{res['answer']}{tail}{note}"
+
+
+def _team_test_plan(a: dict) -> str:
+    res = _test_plan(a.get("query"), a.get("namespace"),
+                     asker_groups=a.get("groups"), limit=a.get("limit") or 10)
+    cites = "\n".join(f"  [{c['n']}] {c['title']}"
+                      + (f" — {c['url']}" if c.get("url") else "")
+                      for c in res["citations"])
+    tail = f"\n\nSources:\n{cites}" if cites else ""
+    note = f"\n({res['hidden_by_acl']} hidden by ACL)" if res["hidden_by_acl"] else ""
+    return f"{res['answer']}{tail}{note}"
+
+
+def _team_capture(a: dict) -> str:
+    res = _capture(a.get("text"), a.get("namespace"), ticket=a.get("ticket"),
+                   role=a.get("role"), groups=a.get("groups"), title=a.get("title"))
+    tix = f" linked to {', '.join(res['tickets'])}" if res["tickets"] else ""
+    scope = f" (acl: {', '.join(a['groups'])})" if a.get("groups") else " (public)"
+    return f"[team-brain] captured {res['stored']} memory(ies){tix}{scope}."
+
+
+# ── Prompts: slash commands in clients that render MCP prompts (e.g. /team-capture).
+# A prompt just returns a message that nudges the agent to call team_capture with
+# THIS chat's content — same job as the "start saving team-brain" phrase, nicer UX.
+PROMPTS = [
+    {
+        "name": "team-capture",
+        "description": "Save the important parts of this chat into the team brain (vectors).",
+        "arguments": [
+            {"name": "ticket", "description": "Jira key this knowledge belongs to", "required": False},
+            {"name": "role", "description": "tester|developer|po (retrieval bias)", "required": False},
+        ],
+    },
+]
+_BY_PROMPT = {p["name"]: p for p in PROMPTS}
+
+
+def _prompt_get(name, args):
+    ticket = (args or {}).get("ticket") or ""
+    role = (args or {}).get("role") or ""
+    hint = (f" Use ticket={ticket}." if ticket else " Infer the Jira key from the chat if any.")
+    hint += f" Use role={role}." if role else ""
+    return ("Call the team_capture tool now with the important content of THIS "
+            "conversation — the decisions, business rules, and gotchas we figured "
+            "out — so it's stored in the team brain and surfaces for the ticket."
+            + hint)
+
+
 _ACTIONS = {"team_assist": _team_assist, "team_remember": _team_remember,
             "team_sources": _team_sources, "team_sync": _team_sync,
-            "team_draft_ticket": _team_draft_ticket}
+            "team_draft_ticket": _team_draft_ticket,
+            "team_explain_ticket": _team_explain_ticket,
+            "team_test_plan": _team_test_plan, "team_capture": _team_capture}
 
 
 # ── JSON-RPC / MCP plumbing (mirrors memento) ─────────────────────────────────
@@ -206,7 +321,7 @@ def handle(req: dict):
     if method == "initialize":
         return _result(id_, {
             "protocolVersion": PROTOCOL_VERSION,
-            "capabilities": {"tools": {}},
+            "capabilities": {"tools": {}, "prompts": {}},
             "serverInfo": {"name": "team-brain", "version": "0.1.0"},
         })
     if method in ("notifications/initialized", "initialized"):
@@ -225,6 +340,18 @@ def handle(req: dict):
         except Exception as exc:  # fail soft: never crash the client
             text = f"[team-brain] error: {exc}"
         return _result(id_, {"content": [{"type": "text", "text": text}]})
+    if method == "prompts/list":
+        return _result(id_, {"prompts": PROMPTS})
+    if method == "prompts/get":
+        params = req.get("params") or {}
+        name = params.get("name")
+        if name not in _BY_PROMPT:
+            return _error(id_, -32602, f"unknown prompt: {name}")
+        return _result(id_, {
+            "description": _BY_PROMPT[name]["description"],
+            "messages": [{"role": "user", "content": {
+                "type": "text", "text": _prompt_get(name, params.get("arguments"))}}],
+        })
     if method == "ping":
         return _result(id_, {})
     return _error(id_, -32601, f"method not found: {method}")

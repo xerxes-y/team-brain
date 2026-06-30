@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>team-brain — one shared memory for PO, developer & tester</title>
+<meta name="description" content="A role-aware org knowledge base that closes the product-owner ↔ developer ↔ tester gap. Captures the work your team already does and answers, with citations, in each role's language." />
+<style>
+  :root{
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+    --brand1:#5b5bf0; --brand2:#9b6bff; --accent:#6c8aff; --accent2:#a78bfa;
+    --green:#4ade80; --yellow:#fbbf24; --pink:#f472b6; --cyan:#22d3ee;
+    --text:#e2e8f0; --muted:#8892b0; --code-bg:#0d1117; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.7}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+
+  header{background:linear-gradient(135deg,#0f1117 0%,#1a1040 50%,#0f1117 100%);border-bottom:1px solid var(--border);padding:72px 24px 56px;text-align:center;position:relative;overflow:hidden}
+  header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(123,107,255,0.18) 0%,transparent 70%);pointer-events:none}
+  .badge{display:inline-block;background:rgba(123,107,255,0.15);border:1px solid rgba(123,107,255,0.4);color:var(--accent2);padding:4px 14px;border-radius:99px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:22px}
+  h1{font-size:clamp(30px,5vw,52px);font-weight:800;line-height:1.15;letter-spacing:-0.02em;margin-bottom:18px;background:linear-gradient(135deg,#fff 0%,var(--brand2) 55%,var(--brand1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .subtitle{font-size:19px;color:var(--muted);max-width:640px;margin:0 auto 28px}
+  .cta{display:inline-block;background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#fff;font-weight:600;padding:11px 22px;border-radius:10px;margin:4px}
+  .cta.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+
+  main{padding:56px 0}
+  section{margin-bottom:56px}
+  h2{font-size:28px;font-weight:700;letter-spacing:-0.01em;margin-bottom:14px;color:#fff}
+  h2 .em{background:linear-gradient(135deg,var(--brand2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  h3{font-size:18px;font-weight:700;margin:0 0 6px;color:#fff}
+  p{margin-bottom:14px;color:var(--text)}
+  .lead{font-size:18px;color:var(--muted)}
+  .muted{color:var(--muted)}
+
+  .grid{display:grid;gap:16px}
+  .grid.two{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .grid.three{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .card .tag{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin-bottom:8px;display:block}
+  .card.po{border-top:3px solid var(--cyan)} .card.dev{border-top:3px solid var(--green)} .card.qa{border-top:3px solid var(--yellow)}
+
+  code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:'SF Mono',Consolas,monospace;font-size:14px;color:var(--accent2)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;border:none;padding:0;color:#cdd6f4;font-size:13.5px;line-height:1.6}
+  .tok-c{color:var(--muted)} .tok-k{color:var(--pink)} .tok-s{color:var(--green)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:15px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+  th{color:var(--accent2);font-weight:600}
+  td code{font-size:13px}
+
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:center;margin:18px 0}
+  .pill{background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:14px}
+  .arr{color:var(--accent);font-size:18px}
+
+  ul.feat{list-style:none}
+  ul.feat li{padding:8px 0 8px 26px;position:relative;border-bottom:1px solid var(--border)}
+  ul.feat li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
+  ul.feat li:last-child{border-bottom:none}
+
+  /* ── interactive demo ── */
+  .demo{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .demo-top{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+  .dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#f87171}.dot.y{background:#fbbf24}.dot.g{background:#4ade80}
+  .demo-top .t{margin-left:8px;font-size:13px;color:var(--muted)}
+  .demo-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:720px){.demo-body{grid-template-columns:1fr}}
+  .demo-left{padding:18px;border-right:1px solid var(--border)}
+  @media(max-width:720px){.demo-left{border-right:none;border-bottom:1px solid var(--border)}}
+  .demo-right{padding:18px;min-height:320px}
+  .roles{display:flex;gap:6px;margin-bottom:14px}
+  .role-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:8px 6px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .role-btn.active{color:#fff}
+  .role-btn[data-r="po"].active{border-color:var(--cyan);background:rgba(34,211,238,.12)}
+  .role-btn[data-r="developer"].active{border-color:var(--green);background:rgba(74,222,128,.12)}
+  .role-btn[data-r="tester"].active{border-color:var(--yellow);background:rgba(251,191,36,.12)}
+  .q-label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:4px 0 8px}
+  .q-btn{display:block;width:100%;text-align:left;background:var(--code-bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:.15s}
+  .q-btn:hover{border-color:var(--accent)}
+  .kb-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin:18px 0 8px}
+  .mem{background:var(--code-bg);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:7px;font-size:13px;transition:.2s}
+  .mem.po{border-left-color:var(--cyan)}.mem.developer{border-left-color:var(--green)}
+  .mem .mt{font-weight:600;color:#fff;font-size:12px}
+  .mem .mx{color:var(--muted);font-size:12.5px}
+  .mem.hot{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2);background:rgba(167,139,250,.08)}
+  .ans{font-size:14.5px;white-space:pre-wrap;min-height:120px}
+  .ans .cite{color:var(--accent2);font-weight:600;cursor:pointer}
+  .ans .src{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+  .ans .tool{display:inline-block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:rgba(108,138,255,.12);border:1px solid rgba(108,138,255,.3);border-radius:99px;padding:2px 10px;margin-bottom:12px}
+  .cursor{display:inline-block;width:7px;height:15px;background:var(--accent);animation:bl 1s steps(2) infinite;vertical-align:-2px}
+  @keyframes bl{0%,50%{opacity:1}51%,100%{opacity:0}}
+  .demo-hint{text-align:center;color:var(--muted);font-size:13px;padding:10px}
+
+  footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <span class="badge">Open source · MCP-native</span>
+    <h1>One shared brain for the<br/>people who ship software</h1>
+    <p class="subtitle">team-brain closes the product-owner ↔ developer ↔ tester gap. It captures the knowledge your team already produces while working — and answers questions, with citations, in each role's own language.</p>
+    <a class="cta" href="#demo">▶ Try the live demo</a>
+    <a class="cta ghost" href="https://github.com/xerxes-y/team-brain">View on GitHub</a>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2>The gap it closes</h2>
+    <p class="lead">Every team loses the same things between roles: the PO writes a ticket but can't read the Java that implements it. The developer gets the ticket but can't map "business language" back to code. The tester has to understand <em>both</em> — usually by interrupting the other two.</p>
+    <p>That knowledge isn't missing. It's scattered across Jira, Confluence, merged PRs, the codebase, and yesterday's chat with the IDE agent. team-brain pulls it into <strong>one shared, role-aware memory</strong> and serves it back the moment someone needs it.</p>
+    <div class="flow">
+      <span class="pill">📋 Product Owner</span><span class="arr">↔</span>
+      <span class="pill">💻 Developer</span><span class="arr">↔</span>
+      <span class="pill">🧪 Tester</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Three roles, <span class="em">three bridges</span></h2>
+    <p class="muted">Each role gets one MCP tool tuned to how it actually asks questions. All three share the same store, so an answer for one role is built from what the others already captured.</p>
+    <div class="grid three">
+      <div class="card po">
+        <span class="tag">Product Owner</span>
+        <h3>team_draft_ticket</h3>
+        <p class="muted">"I need a ticket for the refund flow." It mines business rules straight from the codebase and GitLab — so a PO who doesn't read Java still writes an accurate ticket.</p>
+      </div>
+      <div class="card dev">
+        <span class="tag">Developer</span>
+        <h3>team_explain_ticket</h3>
+        <p class="muted">Hand it a Jira key. It returns the business intent <em>and</em> the code paths that implement it, bridging "business language ↔ code" both ways.</p>
+      </div>
+      <div class="card qa">
+        <span class="tag">Tester</span>
+        <h3>team_test_plan</h3>
+        <p class="muted">The both-sides view: business rules + implementation gotchas for a ticket, turned into what actually needs testing.</p>
+      </div>
+    </div>
+  </section>
+
+  <section id="demo">
+    <h2>See it work — <span class="em">live, right here</span></h2>
+    <p class="muted">A real scenario: ticket <strong>SHOP-42</strong> (refunds). The team already captured what it knew while working — shown on the left. Pick a role, ask a question, and watch team-brain answer in that role's language, citing the exact memory it used. Notice the <strong>tester</strong>'s question gets answered by a <strong>developer</strong>'s note — different words, same meaning.</p>
+
+    <div class="demo">
+      <div class="demo-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">team-brain · namespace: shop-eng</span></div>
+      <div class="demo-body">
+        <div class="demo-left">
+          <div class="roles">
+            <button class="role-btn" data-r="po">📋 Product Owner</button>
+            <button class="role-btn" data-r="developer">💻 Developer</button>
+            <button class="role-btn active" data-r="tester">🧪 Tester</button>
+          </div>
+          <div class="q-label">Ask a question</div>
+          <div id="qs"></div>
+          <div class="kb-title">What the team captured (SHOP-42)</div>
+          <div id="kb"></div>
+        </div>
+        <div class="demo-right">
+          <div class="ans" id="ans"><span class="demo-hint">← pick a question to run it</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px">Canned data, running entirely in your browser — the real product answers the same way over MCP.</p>
+  </section>
+
+  <section id="capture">
+    <h2>Capture the work, <span class="em">not extra work</span></h2>
+    <p>The brain fills two ways — passively as the team works, and deliberately when something matters.</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>Passive connectors</h3>
+        <p class="muted">Point them once; they keep the brain current.</p>
+        <ul class="feat">
+          <li><strong>Jira</strong> — JQL paging, ADF flatten, issue-security ACL, comments</li>
+          <li><strong>Confluence</strong> — CQL paging, page-restriction ACL, heading chunks, incremental</li>
+          <li><strong>GitHub PRs</strong> — the "why" behind merged PRs, private-repo ACL</li>
+          <li><strong>GitLab</strong> — mines business rules out of a codebase for the PO</li>
+          <li><strong>Devin & IntelliJ</strong> — IDE activity: sessions, git commits, TODO/FIXME, live ACP tap</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Deliberate capture</h3>
+        <p class="muted">When a PO finishes analysing a ticket, or a dev finishes implementing one, push the decisions and gotchas in one move — tagged to the ticket so the role bridges pick them up instantly.</p>
+        <pre><code><span class="tok-c"># inside the IDE chat — one of:</span>
+<span class="tok-k">/team-capture</span> ticket=SHOP-42 role=developer
+<span class="tok-c"># …or just say:</span>
+<span class="tok-s">"start saving team-brain"</span></code></pre>
+        <p class="muted">Both nudge the agent to call <code>team_capture</code>; it extracts the Jira key, distills the chat into facts, and stores them as searchable vectors.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Ask it anything — <span class="em">get a cited answer</span></h2>
+    <p><code>team_assist(query, role)</code> retrieves by <strong>meaning</strong>, not keywords, so a tester asking "why does a long checkout fail?" finds the developer's note about "auth token expires after 30 min" — zero shared words.</p>
+    <pre><code><span class="tok-k">&gt;</span> team_assist("why does a long checkout fail?", role="tester")
+
+A cart that sits open past ~30 minutes fails because the payment
+auth token expires; checkout retries 3× then locks the cart. [1]
+
+<span class="tok-c">Sources:
+  [1] Note on SHOP-42  (mem-fb94a17239e1)</span></code></pre>
+    <p class="muted">Every answer carries citations back to the source memory. No synthesis model configured? You still get the ranked, cited snippets — retrieval works without an LLM.</p>
+  </section>
+
+  <section>
+    <h2>How retrieval works</h2>
+    <p>The classic split, done right: vectors <em>find</em> the relevant text, the LLM <em>reads</em> it. A raw embedding is a list of floats no model can interpret — its only job is narrowing thousands of memories to the handful that matter.</p>
+    <div class="flow">
+      <span class="pill">question</span><span class="arr">→</span>
+      <span class="pill">embed</span><span class="arr">→</span>
+      <span class="pill">pgvector + BM25 (RRF)</span><span class="arr">→</span>
+      <span class="pill">ACL filter</span><span class="arr">→</span>
+      <span class="pill">LLM reads text</span><span class="arr">→</span>
+      <span class="pill">cited answer</span>
+    </div>
+    <p class="muted">Built on <a href="https://github.com/xerxes-y/memento">memento</a>'s <code>MemoryStorePG</code>: Postgres with BM25 tsvector + pgvector fused by reciprocal-rank fusion, namespaces, an entity graph, and an audit log. No Postgres? It runs on local SQLite for tests and solo trials.</p>
+  </section>
+
+  <section>
+    <h2>Access control that <span class="em">fails closed</span></h2>
+    <p>Knowledge is scoped by <code>acl:&lt;group&gt;</code> tags. A memory with no ACL is public within its namespace; anything scoped is hidden unless the asker is in the group — and the default on doubt is <strong>hide</strong>, not leak. Source connectors carry their origin's restrictions through (Jira issue-security, Confluence page restrictions, private-repo access), so the brain never exposes what its sources wouldn't.</p>
+  </section>
+
+  <section>
+    <h2>Embeddings: <span class="em">laptop to GPU, one env var</span></h2>
+    <p class="muted">The embedder is an adaptor — pick a resource profile, team-brain chooses backend, model, and dimension. Start on a laptop with no API key; move to a GPU box later with a single change, then re-index.</p>
+    <table>
+      <tr><th>Profile</th><th>Model</th><th>Needs</th></tr>
+      <tr><td><code>demo</code></td><td>bge-small (384-d)</td><td>CPU/Apple-GPU, no key</td></tr>
+      <tr><td><code>cpu</code></td><td>bge-base (768-d)</td><td>more RAM</td></tr>
+      <tr><td><code>gpu-small</code></td><td>Qwen3-Embedding-4B (1024-d)</td><td>~4–9 GB VRAM</td></tr>
+      <tr><td><code>gpu-large</code></td><td>Qwen3-Embedding-8B (1024-d)</td><td>~16 GB VRAM</td></tr>
+      <tr><td><code>server</code></td><td>OpenAI-compatible endpoint</td><td>shared embed server</td></tr>
+    </table>
+    <p class="muted">No API key anywhere required: local embeddings run offline; synthesis is optional (extractive fallback); even an OpenAI-compatible local server (Ollama, vLLM) works for both.</p>
+  </section>
+
+  <section id="install">
+    <h2>Install in 2 minutes</h2>
+    <p>It's an MCP server. Install it, point your IDE agent at it, done — the storage engine is pulled in automatically.</p>
+    <pre><code><span class="tok-c"># 1) install (memento engine comes with it)</span>
+pip install git+https://github.com/xerxes-y/team-brain.git
+
+<span class="tok-c"># 2) register in your MCP client's config</span>
+{
+  "mcpServers": {
+    "team-brain": {
+      "command": "team-brain",
+      "env": { "MEMENTO_DB_URL": "postgresql://…", "TEAMBRAIN_EMBED": "local" }
+    }
+  }
+}</code></pre>
+    <p class="muted">Solo trial needs nothing else — drop <code>MEMENTO_DB_URL</code> and it uses local SQLite. For a shared team brain, point every member at the same Postgres. Full Devin wiring: <a href="https://github.com/xerxes-y/team-brain/blob/main/docs/devin-mcp.md">docs/devin-mcp.md</a>.</p>
+  </section>
+
+  <section>
+    <h2>The full toolbox</h2>
+    <table>
+      <tr><th>MCP tool</th><th>For</th><th>Does</th></tr>
+      <tr><td><code>team_assist</code></td><td>everyone</td><td>cited answer in the asker's role voice</td></tr>
+      <tr><td><code>team_draft_ticket</code></td><td>PO</td><td>business rules from code → a ticket</td></tr>
+      <tr><td><code>team_explain_ticket</code></td><td>dev</td><td>Jira key → intent + code paths</td></tr>
+      <tr><td><code>team_test_plan</code></td><td>tester</td><td>both sides → what to test</td></tr>
+      <tr><td><code>team_capture</code></td><td>PO/dev</td><td>push chat decisions, tagged to a ticket</td></tr>
+      <tr><td><code>team_remember</code></td><td>everyone</td><td>store one fact directly</td></tr>
+      <tr><td><code>team_sources</code></td><td>everyone</td><td>what's been ingested</td></tr>
+      <tr><td><code>team_sync</code></td><td>ops</td><td>run connectors</td></tr>
+    </table>
+    <p class="muted">Plus a <code>/team-capture</code> slash command for clients that render MCP prompts.</p>
+  </section>
+
+</main>
+
+<footer>
+  <p>team-brain · MIT licensed · built on <a href="https://github.com/xerxes-y/memento">memento</a></p>
+  <p><a href="https://github.com/xerxes-y/team-brain">github.com/xerxes-y/team-brain</a></p>
+</footer>
+
+<script>
+(function(){
+  // seeded knowledge for ticket SHOP-42 — what the team captured while working
+  const MEM = {
+    a1:{role:'po',        title:'Refund window (business rule)', text:'Refunds allowed within 14 days of delivery; after that, store credit only.'},
+    b2:{role:'developer', title:'Checkout token gotcha',         text:'Payment auth token expires after 30 min; checkout retries 3× then locks the cart.'},
+    c3:{role:'developer', title:'PR #218 — why',                 text:'Moved the refund-eligibility check server-side; the client clock was being trusted and abused.'}
+  };
+  // per-role preset questions -> {tool, cites:[memIds], answer (uses [n] markers)}
+  const Q = {
+    po:[
+      {q:'Draft a ticket for the refund flow', tool:'team_draft_ticket', cites:['a1','c3'],
+       a:'Refund flow — acceptance criteria, sourced from the codebase:\n• Refund is allowed within 14 days of delivery; afterwards only store credit. [1]\n• Eligibility must be checked server-side — the client clock was previously trusted and abused. [2]'},
+      {q:'What rules govern refunds?', tool:'team_assist', cites:['a1'],
+       a:'Refunds are permitted within 14 days of delivery. Past that window, customers receive store credit rather than a cash refund. [1]'}
+    ],
+    developer:[
+      {q:'Explain ticket SHOP-42', tool:'team_explain_ticket', cites:['a1','b2','c3'],
+       a:'SHOP-42 — refunds.\nIntent: allow refunds within 14 days of delivery, store credit after. [1]\nCode you\'ll touch: eligibility check lives server-side (PR #218 moved it there — the client clock was abused). [3]\nWatch out: the payment auth token expires after 30 min; checkout retries 3× then locks the cart. [2]'},
+      {q:'Where is refund eligibility decided?', tool:'team_assist', cites:['c3'],
+       a:'Server-side, as of PR #218 — it was moved off the client because the client clock was being trusted and abused. [1]'}
+    ],
+    tester:[
+      {q:'Why does a long checkout fail?', tool:'team_assist', cites:['b2'],
+       a:'A cart left open too long fails because the payment auth token expires after ~30 minutes; checkout then retries 3× and locks the cart. [1]\n\n↳ a tester question, answered by a developer\'s note — matched by meaning, not keywords.'},
+      {q:'What should I test for refunds?', tool:'team_test_plan', cites:['a1','c3'],
+       a:'Test plan for SHOP-42:\n• Refund accepted on day 14, store credit on day 15 (boundary). [1]\n• Tampered/forward client clock must NOT grant a refund — eligibility is server-side. [2]\n• Refund attempt after the 30-min token expiry path.'}
+    ]
+  };
+
+  const qsEl=document.getElementById('qs'), kbEl=document.getElementById('kb'), ansEl=document.getElementById('ans');
+  let role='tester', typer=null;
+
+  function renderKB(){
+    kbEl.innerHTML='';
+    for(const id in MEM){const m=MEM[id];
+      const d=document.createElement('div'); d.className='mem '+m.role; d.id='mem-'+id;
+      d.innerHTML='<div class="mt">'+m.title+'</div><div class="mx">'+m.text+'</div>';
+      kbEl.appendChild(d);
+    }
+  }
+  function renderQs(){
+    qsEl.innerHTML='';
+    Q[role].forEach((item,i)=>{
+      const b=document.createElement('button'); b.className='q-btn'; b.textContent=item.q;
+      b.onclick=()=>run(item); qsEl.appendChild(b);
+    });
+  }
+  function setRole(r){
+    role=r;
+    document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.r===r));
+    renderQs();
+    ansEl.innerHTML='<span class="demo-hint">← pick a question to run it</span>';
+    document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+  }
+  function run(item){
+    if(typer) clearInterval(typer);
+    document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+    // build final HTML with citation markers -> links; collect source list
+    let body=item.a.replace(/\[(\d+)\]/g,(_,n)=>{
+      const id=item.cites[(+n)-1];
+      return '<span class="cite" data-m="'+id+'">['+n+']</span>';
+    });
+    const srcs=item.cites.map((id,i)=>'['+(i+1)+'] '+MEM[id].title+'  <span style="opacity:.6">(mem-'+id+')</span>').join('<br>');
+    const head='<span class="tool">'+item.tool+'</span>\n';
+    const full=head+body+'<div class="src">Sources:<br>'+srcs+'</div>';
+    // typing animation over the plain answer, then swap in the linked version
+    ansEl.innerHTML=head+'<span id="typ"></span><span class="cursor"></span>';
+    const typEl=document.getElementById('typ'); let i=0; const plain=item.a;
+    const step=Math.max(3,Math.ceil(plain.length/28)); // ~28 frames total, snappy regardless of length
+    typer=setInterval(()=>{
+      i+=step; typEl.textContent=plain.slice(0,i);
+      if(i>=plain.length){clearInterval(typer); typer=null;
+        ansEl.innerHTML=full;
+        ansEl.querySelectorAll('.cite').forEach(c=>{
+          const hot=()=>{document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+            const t=document.getElementById('mem-'+c.dataset.m); if(t){t.classList.add('hot'); t.scrollIntoView({block:'nearest',behavior:'smooth'});}};
+          c.onmouseenter=hot; c.onclick=hot;
+        });
+        // auto-highlight the first cited source so the link is obvious
+        const first=document.getElementById('mem-'+item.cites[0]); if(first) first.classList.add('hot');
+      }
+    },12);
+  }
+  document.querySelectorAll('.role-btn').forEach(b=>b.onclick=()=>setRole(b.dataset.r));
+  renderKB(); renderQs();
+})();
+</script>
+</body>
+</html>

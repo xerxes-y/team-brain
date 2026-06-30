@@ -28,6 +28,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import ssl
 import urllib.parse
 import urllib.request
 
@@ -198,6 +199,16 @@ class JiraClient:
             self._auth = f"Bearer {token}"
         self.timeout = timeout
         self.search_path = search_path
+        # Corporate TLS: prefer pointing at the CA bundle (JIRA_CERT_BUNDLE) so
+        # verification still happens; JIRA_VERIFY_SSL=false is the last-resort
+        # escape hatch for a proxy that breaks the chain. Default: normal verify.
+        bundle = os.environ.get("JIRA_CERT_BUNDLE")
+        if bundle:
+            self._ssl = ssl.create_default_context(cafile=bundle)
+        elif os.environ.get("JIRA_VERIFY_SSL", "true").lower() == "false":
+            self._ssl = ssl._create_unverified_context()
+        else:
+            self._ssl = None  # urllib's default verified context
 
     def get_json(self, url_or_path: str, params: dict | None = None) -> dict:
         url = url_or_path if url_or_path.startswith("http") else self.base_url + url_or_path
@@ -205,7 +216,7 @@ class JiraClient:
             url += ("&" if "?" in url else "?") + urllib.parse.urlencode(params)
         req = urllib.request.Request(url, headers={
             "Authorization": self._auth, "Accept": "application/json"})
-        with urllib.request.urlopen(req, timeout=self.timeout) as resp:
+        with urllib.request.urlopen(req, timeout=self.timeout, context=self._ssl) as resp:
             return json.loads(resp.read().decode("utf-8"))
 
     def iter_issues(self, jql: str, fields: str, page_size: int = 50):

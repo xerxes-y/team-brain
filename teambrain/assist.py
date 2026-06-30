@@ -29,6 +29,8 @@ from __future__ import annotations
 import json
 import os
 
+from . import log as _log
+from .log import log
 from . import store as _store
 from .connectors._text import ticket_keys
 
@@ -86,9 +88,14 @@ def _retrieve(query, profile, namespace, asker_groups, limit, overfetch=4,
               boost_tags=None):
     """Shared read core: hybrid search → ACL filter (fail closed) → role rerank.
     Returns ``(ranked_visible_rows, n_hidden)``."""
+    log.debug("search ns=%s mode=hybrid limit=%s q=%r",
+              namespace, limit * overfetch, str(query)[:120])
     rows = _store.store().search(query, limit=limit * overfetch,
                                  namespace=namespace, mode="hybrid")
+    log.debug("search ← %d rows: %s", len(rows),
+              ", ".join(_log.row_brief(m) for m in rows) or "(none)")
     visible, hidden = _store.acl_filter(rows, asker_groups)
+    log.debug("acl: %d visible, %d hidden", len(visible), hidden)
     return _rerank(visible, profile, boost_tags)[:limit], hidden
 
 
@@ -100,7 +107,16 @@ def _synthesize(query, role, profile, rows):
     if hook:
         mod, _, fn = hook.partition(":")
         import importlib
-        return getattr(importlib.import_module(mod), fn)(query, role, profile, rows)
+        try:
+            out = getattr(importlib.import_module(mod), fn)(query, role, profile, rows)
+            log.debug("synth=%s ok (%d rows)", hook, len(rows))
+            return out
+        except Exception as exc:
+            # ponytail: don't crash or silently degrade — a misconfigured/uncommitted
+            # synth module (e.g. TEAMBRAIN_SYNTH points at a missing file) must fall
+            # back to extractive AND say why, so it's diagnosable. WARNING => always shown.
+            log.warning("TEAMBRAIN_SYNTH=%r failed (%s); falling back to extractive.",
+                        hook, exc)
     if not rows:
         return ("No knowledge found for this question. Nothing in the team brain "
                 "covers it yet — say so rather than guessing.")

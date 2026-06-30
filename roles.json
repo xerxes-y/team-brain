@@ -17,5 +17,17 @@
     "tags": ["jira", "decision", "roadmap", "confluence", "spec", "business", "gitlab"],
     "tiers": ["semantic", "episodic"],
     "task_prompt": "You help a product owner. Reconstruct what was decided and what is blocked, and surface the BUSINESS RULES the product actually enforces (including those mined from code) in plain non-technical language, so the PO can write the ticket they need. When a rule comes from code, cite the source file. Bridge the gap: translate developer/infra detail into product terms."
+  },
+
+  "ops": {
+    "tags": ["k8s", "infra", "ansible", "terraform", "docker", "deployment", "gitlab"],
+    "tiers": ["procedural", "semantic"],
+    "task_prompt": "You help an ops/infra engineer. Focus on deployment steps, config, infrastructure as code, and runbooks. Cite exact config keys and file paths. If a procedure is undefined in the knowledge base, say so rather than guessing."
+  },
+
+  "security": {
+    "tags": ["security", "acl", "auth", "audit", "compliance", "jira"],
+    "tiers": ["semantic", "procedural"],
+    "task_prompt": "You help a security/compliance engineer. Surface access controls, audit requirements, authentication flows, and known vulnerabilities. Cite the policy or source memory for every claim."
   }
 }

@@ -188,6 +188,7 @@ mcp_server.py              MCP: team_assist / team_remember / team_sources / tea
                            MCP prompt `team-capture` -> `/team-capture` slash command in clients that render prompts
 teambrain/capture.py       deliberate end-of-work capture: chat -> memories (optional distill)
 teambrain/teams.py         Microsoft Teams outgoing-webhook bridge: read-only Q&A surface (HMAC, fail-closed ACL)
+teambrain/demo.py          `team-brain demo` — cold-start sweep: ingest every repo under a directory
 bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows)
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
@@ -410,6 +411,13 @@ python3 -c "from teambrain.connectors.devin import sync; \
 #   web_base turns SHAs into src: commit links; acl_groups scopes a private project (fail-closed).
 python3 -c "from teambrain.connectors.intellij import sync; \
   print(sync('/path/to/intellij/project', namespace='team-eng'))"
+
+# DEMO / cold start — pre-fill a namespace from EVERY git repo under a
+#   directory: commits + TODOs, OpenSpec trees, and business rules mined from
+#   local source (LLM if wired, offline heuristic otherwise; --max-files caps
+#   cost per repo). Optional --jira PROJ / --confluence SPACE / --github o/r
+#   run those connectors too (env creds). Per-repo failures don't stop the sweep.
+team-brain demo ~/IdeaProjects --namespace demo --jira PROSET
 
 # OpenSpec — ingest a repo's openspec/ tree (no creds): proposal.md (why),
 #   specs (scenarios), design.md (how); tasks.md skipped. Jira keys in the

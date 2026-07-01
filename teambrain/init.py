@@ -36,11 +36,13 @@ def _yes(prompt, default=False):
     return ans.startswith("y")
 
 
-def build_config(db, embed, synth, key):
+def build_config(db, embed, synth, key, namespace=""):
     """The (env, mcp-block) for the given choices — pure, so it's testable."""
     env = {}
     if db:
         env["MEMENTO_DB_URL"] = db
+    if namespace:
+        env["TEAMBRAIN_NAMESPACE"] = namespace
     if embed and embed != "none":
         env["TEAMBRAIN_EMBED"] = embed
     if synth:
@@ -56,11 +58,12 @@ def build_config(db, embed, synth, key):
 def main(argv=None):
     print("team-brain init — configure the MCP server for your IDE\n")
     db = _ask("Shared Postgres DSN (blank = local SQLite, solo trial)")
+    namespace = _ask("Team namespace (your team/project scope, e.g. proset, payments)")
     embed = _ask("Embedder: local / openai / none", "local") if db else "none"
     synth = _yes("Enable Claude-backed answers (TEAMBRAIN_SYNTH)?")
     key = _ask("ANTHROPIC_API_KEY") if synth else ""
 
-    _env, block = build_config(db, embed, synth, key)
+    _env, block = build_config(db, embed, synth, key, namespace)
     text = json.dumps(block, indent=2)
 
     out = os.path.abspath("team-brain.mcp.json")

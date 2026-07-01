@@ -24,12 +24,14 @@ def test_build_config_shared_postgres_with_synth():
 
 def test_main_writes_paste_file(tmp_path, monkeypatch, capsys):
     monkeypatch.chdir(tmp_path)
-    answers = iter(["postgresql://u:p@h/db", "local", "n"])  # dsn, embedder, synth?=n
+    answers = iter(["postgresql://u:p@h/db", "proset", "local", "n"])  # dsn, namespace, embedder, synth?=n
     monkeypatch.setattr(builtins, "input", lambda *_: next(answers))
 
     assert tb_init.main([]) == 0
     out = tmp_path / "team-brain.mcp.json"
     assert out.exists()
     cfg = json.loads(out.read_text())
-    assert cfg["mcpServers"]["team-brain"]["env"]["MEMENTO_DB_URL"] == "postgresql://u:p@h/db"
+    env = cfg["mcpServers"]["team-brain"]["env"]
+    assert env["MEMENTO_DB_URL"] == "postgresql://u:p@h/db"
+    assert env["TEAMBRAIN_NAMESPACE"] == "proset"
     assert "start saving team-brain" in capsys.readouterr().out

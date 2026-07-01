@@ -18,9 +18,11 @@ Connector creds (only for team_sync): CONFLUENCE_*, JIRA_*, GITHUB_TOKEN.
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from teambrain import store as _store
+from teambrain.log import log
 from teambrain.assist import assist as _assist
 from teambrain.assist import draft_ticket as _draft_ticket
 from teambrain.assist import explain_ticket as _explain_ticket
@@ -37,13 +39,13 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query": {"type": "string"},
-                "role": {"type": "string", "enum": ["tester", "developer", "po"]},
-                "namespace": {"type": "string", "description": "team scope"},
+                "role": {"type": "string", "enum": ["tester", "developer", "po", "ops", "security"]},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "asker's groups, for ACL (omit => public only)"},
                 "limit": {"type": "integer"},
             },
-            "required": ["query", "role", "namespace"],
+            "required": ["query", "role"],
         },
     },
     {
@@ -54,38 +56,38 @@ TOOLS = [
             "properties": {
                 "title": {"type": "string"},
                 "content": {"type": "string"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "tags": {"type": "array", "items": {"type": "string"}},
                 "tier": {"type": "string"},
                 "groups": {"type": "array", "items": {"type": "string"}},
                 "source": {"type": "string"},
             },
-            "required": ["title", "content", "namespace"],
+            "required": ["title", "content"],
         },
     },
     {
         "name": "team_sources",
-        "description": "Show the raw memories backing an answer (ACL-gated, no synthesis) — for transparency/debugging.",
+        "description": "Inspect the raw memories backing an answer (ACL-gated, no synthesis). Use to verify a ticket was ingested, check ACL coverage, or audit which sources team-brain draws from for a given query.",
         "schema": {
             "type": "object",
             "properties": {
                 "query": {"type": "string"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "groups": {"type": "array", "items": {"type": "string"}},
                 "limit": {"type": "integer"},
             },
-            "required": ["query", "namespace"],
+            "required": ["query"],
         },
     },
     {
         "name": "team_sync",
-        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin|intellij; key is the space key / project key / 'owner/repo' / 'group/project' / local project path (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity; intellij ingests a local IntelliJ project's git commits + TODO/FIXME notes (key=project path; optional web_base for commit back-links). Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
+        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin|intellij|openspec; key is the space key / project key / 'owner/repo' / 'group/project' / local project path (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity; intellij ingests a local IntelliJ project's git commits + TODO/FIXME notes (key=project path; optional web_base for commit back-links); openspec ingests a repo's openspec/ tree — proposals, specs, designs — as ticket-tagged memories (key=repo path; optional web_base for file back-links). Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
         "schema": {
             "type": "object",
             "properties": {
-                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin", "intellij"]},
+                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin", "intellij", "openspec"]},
                 "key": {"type": "string", "description": "space key | project key | owner/repo | group/project | local project path (not used by devin)"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "since": {"type": "string", "description": "incremental checkpoint (CQL/JQL date, ISO updated_at, ISO transcript time, or git date); not used by gitlab"},
                 "labels": {"type": "array", "items": {"type": "string"},
                            "description": "confluence only: restrict to these labels"},
@@ -94,7 +96,7 @@ TOOLS = [
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "devin/intellij only: scope ingested memories to these groups (acl:*)"},
             },
-            "required": ["source", "namespace"],
+            "required": ["source"],
         },
     },
     {
@@ -104,12 +106,12 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "what the PO wants the ticket to address"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "asker's groups, for ACL (omit => public only)"},
                 "limit": {"type": "integer"},
             },
-            "required": ["query", "namespace"],
+            "required": ["query"],
         },
     },
     {
@@ -119,12 +121,12 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "ticket": {"type": "string", "description": "Jira key (e.g. ABC-123) and/or the ticket text"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "asker's groups, for ACL (omit => public only)"},
                 "limit": {"type": "integer"},
             },
-            "required": ["ticket", "namespace"],
+            "required": ["ticket"],
         },
     },
     {
@@ -134,12 +136,12 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "query": {"type": "string", "description": "feature/ticket/behavior to test (a Jira key boosts linked work)"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "asker's groups, for ACL (omit => public only)"},
                 "limit": {"type": "integer"},
             },
-            "required": ["query", "namespace"],
+            "required": ["query"],
         },
     },
     {
@@ -149,24 +151,31 @@ TOOLS = [
             "type": "object",
             "properties": {
                 "text": {"type": "string", "description": "the important chat content to remember"},
-                "namespace": {"type": "string"},
+                "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "ticket": {"type": "string", "description": "Jira key and/or text this knowledge belongs to"},
-                "role": {"type": "string", "enum": ["tester", "developer", "po"],
+                "role": {"type": "string", "enum": ["tester", "developer", "po", "ops", "security"],
                          "description": "who captured it (retrieval bias)"},
                 "groups": {"type": "array", "items": {"type": "string"},
                            "description": "ACL scope (omit => public in the namespace)"},
                 "title": {"type": "string", "description": "optional title for the stored note(s)"},
             },
-            "required": ["text", "namespace"],
+            "required": ["text"],
         },
     },
 ]
 _BY_NAME = {t["name"]: t for t in TOOLS}
 
 
+def _ns(a: dict):
+    """Resolve the team namespace: explicit arg wins, else this server's
+    configured default (``TEAMBRAIN_NAMESPACE``), else None → memento's default.
+    Lets a team point their server at one namespace and stop passing it per call."""
+    return a.get("namespace") or os.environ.get("TEAMBRAIN_NAMESPACE")
+
+
 def _team_assist(a: dict) -> str:
     try:
-        res = _assist(a.get("query"), a.get("role"), a.get("namespace"),
+        res = _assist(a.get("query"), a.get("role"), _ns(a),
                       asker_groups=a.get("groups"), limit=a.get("limit") or 8)
     except ValueError as exc:
         return f"[team-brain] {exc}"
@@ -182,14 +191,14 @@ def _team_remember(a: dict) -> str:
     mid = _store.store().save(a.get("title"), a.get("content"),
                               tier=a.get("tier") or "semantic", tags=tags,
                               source=a.get("source") or "manual",
-                              namespace=a.get("namespace"))
+                              namespace=_ns(a))
     scope = f" (acl: {', '.join(a['groups'])})" if a.get("groups") else " (public)"
     return f"[team-brain] remembered ({mid}){scope}: {a.get('title')}"
 
 
 def _team_sources(a: dict) -> str:
     rows = _store.store().search(a.get("query"), limit=(a.get("limit") or 8) * 4,
-                                 namespace=a.get("namespace"), mode="hybrid")
+                                 namespace=_ns(a), mode="hybrid")
     visible, hidden = _store.acl_filter(rows, a.get("groups"))
     visible = visible[:a.get("limit") or 8]
     if not visible:
@@ -203,7 +212,7 @@ def _team_sources(a: dict) -> str:
 def _team_sync(a: dict) -> str:
     source = a.get("source")
     key = a.get("key")
-    ns = a.get("namespace")
+    ns = _ns(a)
     since = a.get("since")
     if source == "confluence":
         from teambrain.connectors.confluence import sync_space
@@ -224,6 +233,10 @@ def _team_sync(a: dict) -> str:
         from teambrain.connectors.intellij import sync
         res = sync(key, ns, since=since, web_base=a.get("web_base"),
                    acl_groups=a.get("groups"))
+    elif source == "openspec":
+        from teambrain.connectors.openspec import sync
+        res = sync(key, ns, web_base=a.get("web_base"),
+                   acl_groups=a.get("groups"))
     else:
         return f"[team-brain] unknown source: {source}"
     what = f"{source} '{key}'" if key else source
@@ -231,7 +244,7 @@ def _team_sync(a: dict) -> str:
 
 
 def _team_draft_ticket(a: dict) -> str:
-    res = _draft_ticket(a.get("query"), a.get("namespace"),
+    res = _draft_ticket(a.get("query"), _ns(a),
                         asker_groups=a.get("groups"), limit=a.get("limit") or 8)
     cites = "\n".join(f"  [{c['n']}] {c['title']}"
                       + (f" — {c['url']}" if c.get("url") else "")
@@ -242,7 +255,7 @@ def _team_draft_ticket(a: dict) -> str:
 
 
 def _team_explain_ticket(a: dict) -> str:
-    res = _explain_ticket(a.get("ticket"), a.get("namespace"),
+    res = _explain_ticket(a.get("ticket"), _ns(a),
                           asker_groups=a.get("groups"), limit=a.get("limit") or 8)
     cites = "\n".join(f"  [{c['n']}] {c['title']}"
                       + (f" — {c['url']}" if c.get("url") else "")
@@ -253,7 +266,7 @@ def _team_explain_ticket(a: dict) -> str:
 
 
 def _team_test_plan(a: dict) -> str:
-    res = _test_plan(a.get("query"), a.get("namespace"),
+    res = _test_plan(a.get("query"), _ns(a),
                      asker_groups=a.get("groups"), limit=a.get("limit") or 10)
     cites = "\n".join(f"  [{c['n']}] {c['title']}"
                       + (f" — {c['url']}" if c.get("url") else "")
@@ -264,7 +277,7 @@ def _team_test_plan(a: dict) -> str:
 
 
 def _team_capture(a: dict) -> str:
-    res = _capture(a.get("text"), a.get("namespace"), ticket=a.get("ticket"),
+    res = _capture(a.get("text"), _ns(a), ticket=a.get("ticket"),
                    role=a.get("role"), groups=a.get("groups"), title=a.get("title"))
     tix = f" linked to {', '.join(res['tickets'])}" if res["tickets"] else ""
     scope = f" (acl: {', '.join(a['groups'])})" if a.get("groups") else " (public)"
@@ -335,9 +348,12 @@ def handle(req: dict):
         name = params.get("name")
         if name not in _ACTIONS:
             return _error(id_, -32602, f"unknown tool: {name}")
+        args = params.get("arguments") or {}
+        log.debug("call %s ns=%s role=%s", name, args.get("namespace"), args.get("role"))
         try:
-            text = _ACTIONS[name](params.get("arguments") or {})
+            text = _ACTIONS[name](args)
         except Exception as exc:  # fail soft: never crash the client
+            log.exception("tool %s failed", name)  # ERROR + traceback to stderr
             text = f"[team-brain] error: {exc}"
         return _result(id_, {"content": [{"type": "text", "text": text}]})
     if method == "prompts/list":

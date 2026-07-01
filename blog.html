@@ -62,6 +62,22 @@
   ul.feat li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
   ul.feat li:last-child{border-bottom:none}
 
+  /* ── architecture diagrams ── */
+  .arch-diagram{display:flex;flex-direction:column;gap:20px;margin:20px 0}
+  .arch-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative}
+  .arch-header{font-weight:700;color:var(--accent2);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .arch-item{padding:8px 12px;background:var(--code-bg);border:1px solid var(--border);border-radius:6px;font-size:13px;margin-bottom:6px;color:var(--text)}
+  .arch-item:last-child{margin-bottom:0}
+  .arch-flow{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+  .arch-pill{background:rgba(123,107,255,.15);border:1px solid rgba(123,107,255,.3);padding:8px 12px;border-radius:20px;font-size:13px;color:var(--accent2);white-space:nowrap}
+  .arch-arrow{color:var(--accent);font-size:18px}
+  .arch-layer{border-left:3px solid var(--accent);padding-left:16px;margin:16px 0}
+  .arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}
+  .arch-component{background:var(--code-bg);border:2px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+  .arch-component.highlight{border-color:var(--accent);background:rgba(108,138,255,.08)}
+  .arch-component .label{font-weight:700;color:#fff;font-size:13px;margin-bottom:8px}
+  .arch-component .detail{font-size:12px;color:var(--muted);line-height:1.4}
+
   /* ── interactive demo ── */
   .demo{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
   .demo-top{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
@@ -118,13 +134,14 @@
 
   <section>
     <h2>The gap it closes</h2>
-    <p class="lead">Every team loses the same things between roles: the PO writes a ticket but can't read the Java that implements it. The developer gets the ticket but can't map "business language" back to code. The tester has to understand <em>both</em> — usually by interrupting the other two.</p>
-    <p>That knowledge isn't missing. It's scattered across Jira, Confluence, merged PRs, the codebase, and yesterday's chat with the IDE agent. team-brain pulls it into <strong>one shared, role-aware memory</strong> and serves it back the moment someone needs it.</p>
+    <p class="lead">The tax isn't "we don't have enough docs" — it's translation loss at the PO ↔ developer ↔ tester seam, repeated per ticket, with no durable record. A PO and a dev spend 20 minutes on <em>why</em> a rule exists; that reasoning lives in two heads and an unsearchable scrollback. A different dev breaks it three sprints later, or re-asks. The tester chases both people to reconcile expected vs actual.</p>
+    <p>Jira and Confluence hold the <strong>artifacts</strong> — they don't hold the reasoning that connects them. When someone rotates off the team, the <em>why</em> leaves with them; the ticket and the diff survive, the reasoning doesn't. team-brain pulls that reasoning into <strong>one shared, role-aware memory</strong> and serves it back the moment someone needs it, instead of an interruption.</p>
     <div class="flow">
       <span class="pill">📋 Product Owner</span><span class="arr">↔</span>
       <span class="pill">💻 Developer</span><span class="arr">↔</span>
       <span class="pill">🧪 Tester</span>
     </div>
+    <p class="muted" style="font-size:14px">Honest caveat: this only pays off if capture actually happens. It's not a search layer over docs you already have — it's a bet that automatic capture beats manual documentation, specifically at this handoff. No capture, no value.</p>
   </section>
 
   <section>
@@ -151,7 +168,7 @@
 
   <section id="demo">
     <h2>See it work — <span class="em">live, right here</span></h2>
-    <p class="muted">A Processing &amp; Settlement scenario: ticket <strong>SETL-204</strong> — auto-finalize cash transfers when a settlement message arrives from the reconciliation service, across several custodian banks with different message formats. The PO wrote it, a developer did the pre-implementation investigation, a tester owns the test ticket. Each captured what they learned. Pick a role, ask a question — and watch the <strong>tester</strong>'s "what should I test?" surface the <strong>developer</strong>'s buried gotcha that would silently mis-book transfers.</p>
+    <p class="muted">A Processing &amp; Settlement scenario: ticket <strong>PROSET-9913</strong> — auto-finalize cash transfers when a settlement message arrives from the reconciliation service, across several custodian banks with different message formats. The PO wrote it, a developer did the pre-implementation investigation, a tester owns the test ticket. Each captured what they learned. Pick a role, ask a question — and watch the <strong>tester</strong>'s "what should I test?" surface the <strong>developer</strong>'s buried gotcha that would silently mis-book transfers.</p>
 
     <div class="demo">
       <div class="demo-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">team-brain · namespace: settlement-ops</span></div>
@@ -164,7 +181,7 @@
           </div>
           <div class="q-label">Ask a question</div>
           <div id="qs"></div>
-          <div class="kb-title">What the team captured (SETL-204)</div>
+          <div class="kb-title">What the team captured (PROSET-9913)</div>
           <div id="kb"></div>
         </div>
         <div class="demo-right">
@@ -194,7 +211,7 @@
         <h3>Deliberate capture</h3>
         <p class="muted">When a PO finishes analysing a ticket, or a dev finishes implementing one, push the decisions and gotchas in one move — tagged to the ticket so the role bridges pick them up instantly.</p>
         <pre><code><span class="tok-c"># inside the IDE chat — one of:</span>
-<span class="tok-k">/team-capture</span> ticket=SETL-204 role=developer
+<span class="tok-k">/team-capture</span> ticket=PROSET-9913 role=developer
 <span class="tok-c"># …or just say:</span>
 <span class="tok-s">"start saving team-brain"</span></code></pre>
         <p class="muted">Both nudge the agent to call <code>team_capture</code>; it extracts the Jira key, distills the chat into facts, and stores them as searchable vectors.</p>
@@ -212,22 +229,67 @@ type-2 row, so matching on it silently mis-books some custodians —
 the real discriminator is the counterparty account. [1]
 
 <span class="tok-c">Sources:
-  [1] Investigation note on SETL-204  (mem-9a3f…)</span></code></pre>
+  [1] Investigation note on PROSET-9913  (mem-9a3f…)</span></code></pre>
     <p class="muted">Every answer carries citations back to the source memory. No synthesis model configured? You still get the ranked, cited snippets — retrieval works without an LLM.</p>
   </section>
 
   <section>
-    <h2>How retrieval works</h2>
+    <h2>Architecture — write path</h2>
+    <p class="lead">Five connectors pull in knowledge automatically; one tool captures it deliberately. Both write the same store.</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>Connectors (passive)</h3>
+        <p class="muted">Set once, they keep the brain current. ACL carried from source (Jira issue-security, Confluence page restrictions, private-repo access).</p>
+        <ul class="feat">
+          <li><strong>Jira:</strong> tickets + comments, JQL paging, issue-security ACL</li>
+          <li><strong>Confluence:</strong> pages by space, CQL paging, page-restrictions ACL, chunked by heading</li>
+          <li><strong>GitHub / GitLab:</strong> merged PRs (the "why"), private-repo ACL</li>
+          <li><strong>GitLab code:</strong> mines business rules from the codebase for the PO</li>
+          <li><strong>IDE:</strong> Devin sessions, IntelliJ git commits + TODOs, live ACP tap</li>
+        </ul>
+      </div>
+      <div class="card">
+        <h3>Deliberate capture</h3>
+        <p class="muted">End-of-work: when a PO finishes analysis or a dev finishes implementation, push the decisions into the brain in one move.</p>
+        <pre><code><span class="tok-k">/team-capture</span> ticket=PROSET-9913
+<span class="tok-c"># …or inside the IDE:</span>
+<span class="tok-s">"start saving team-brain"</span></code></pre>
+        <p class="muted">Extracts the Jira key, distills the chat into facts, stores them with role bias so they surface immediately in the role bridges.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <h2>Architecture — read path</h2>
     <p>The classic split, done right: vectors <em>find</em> the relevant text, the LLM <em>reads</em> it. A raw embedding is a list of floats no model can interpret — its only job is narrowing thousands of memories to the handful that matter.</p>
     <div class="flow">
       <span class="pill">question</span><span class="arr">→</span>
       <span class="pill">embed</span><span class="arr">→</span>
       <span class="pill">pgvector + BM25 (RRF)</span><span class="arr">→</span>
       <span class="pill">ACL filter</span><span class="arr">→</span>
-      <span class="pill">LLM reads text</span><span class="arr">→</span>
-      <span class="pill">cited answer</span>
+      <span class="pill">soft-rerank<br/>(role bias)</span><span class="arr">→</span>
+      <span class="pill">LLM reads<br/>+ cites</span>
     </div>
     <p class="muted">Built on <a href="https://github.com/xerxes-y/memento">memento</a>'s <code>MemoryStorePG</code>: Postgres with BM25 tsvector + pgvector fused by reciprocal-rank fusion, namespaces, an entity graph, and an audit log. No Postgres? It runs on local SQLite for tests and solo trials.</p>
+  </section>
+
+  <section>
+    <h2>The role bridges — different output, same retrieval</h2>
+    <p class="lead">Each role gets the same search underneath, but the retrieval bias and output shape are different. One shared namespace means a PO's business rule and a dev's code gotcha live together, searchable, without duplicating the store.</p>
+    <div class="grid three">
+      <div class="card po">
+        <h3>PO: draft_ticket</h3>
+        <p class="muted"><strong>Input:</strong> a need. <strong>Bias:</strong> business rules, decisions, specs. <strong>Output:</strong> title + background + acceptance criteria, so the PO writes an accurate ticket.</p>
+      </div>
+      <div class="card dev">
+        <h3>Dev: explain_ticket</h3>
+        <p class="muted"><strong>Input:</strong> a Jira key. <strong>Bias:</strong> PRs, decisions, code rules. <strong>Output:</strong> business intent + code paths, bridging "why did we build this" ↔ "where is it in code."</p>
+      </div>
+      <div class="card qa">
+        <h3>Tester: test_plan</h3>
+        <p class="muted"><strong>Input:</strong> a feature/ticket. <strong>Bias:</strong> both PO rules + dev implementation. <strong>Output:</strong> expected vs actual behavior + edge cases to test.</p>
+      </div>
+    </div>
   </section>
 
   <section>
@@ -247,6 +309,145 @@ the real discriminator is the counterparty account. [1]
       <tr><td><code>server</code></td><td>OpenAI-compatible endpoint</td><td>shared embed server</td></tr>
     </table>
     <p class="muted">No API key anywhere required: local embeddings run offline; synthesis is optional (extractive fallback); even an OpenAI-compatible local server (Ollama, vLLM) works for both.</p>
+  </section>
+
+  <section>
+    <h2>System architecture — three layers + connectors</h2>
+    <p class="lead">team-brain connects your IDE to PostgreSQL. Connectors feed the store continuously. An LLM synthesizes (optional). What makes it work: hybrid search (keywords + meaning), role-aware ranking, and fail-closed ACL.</p>
+
+    <!-- Main architecture flow diagram -->
+    <div class="arch-diagram">
+      <div class="arch-box">
+        <div class="arch-header">🔝 Input</div>
+        <div class="arch-flow">
+          <div class="arch-pill">IDE Query</div>
+          <div class="arch-pill">team_assist</div>
+          <div class="arch-pill">team_draft_ticket</div>
+          <div class="arch-pill">team_explain_ticket</div>
+        </div>
+      </div>
+
+      <div class="arch-box">
+        <div class="arch-header">🧠 Core Pipeline (team-brain)</div>
+        <div class="arch-layer">
+          <strong style="color:var(--accent2)">1. Hybrid Search</strong>
+          <div class="arch-flow" style="margin-top:8px;gap:8px">
+            <div class="arch-pill">Query Embed</div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-pill">BM25 (keywords)</div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-pill">pgvector (meaning)</div>
+            <div class="arch-arrow">→</div>
+            <div class="arch-pill">RRF (fuse)</div>
+          </div>
+        </div>
+        <div class="arch-layer">
+          <strong style="color:var(--accent2)">2. ACL Filter</strong>
+          <p class="muted" style="margin:8px 0;font-size:13px">Drop memories with acl:group tags unless asker is in that group. Unknown asker → see public only. (Fail-closed)</p>
+        </div>
+        <div class="arch-layer">
+          <strong style="color:var(--accent2)">3. Soft Rerank</strong>
+          <p class="muted" style="margin:8px 0;font-size:13px">Boost memories tagged with role's tags (e.g. "jira", "pr", "confluence"). Keep hybrid order as tiebreaker.</p>
+        </div>
+      </div>
+
+      <div class="arch-box">
+        <div class="arch-header">💾 Storage Layer (PostgreSQL + MemoryStorePG)</div>
+        <div class="arch-grid">
+          <div class="arch-component">
+            <div class="label">BM25 tsvector</div>
+            <div class="detail">Full-text search index. Finds by keywords.</div>
+          </div>
+          <div class="arch-component highlight">
+            <div class="label">pgvector</div>
+            <div class="detail">Dense embeddings (384–1024-d). Finds by meaning.</div>
+          </div>
+          <div class="arch-component">
+            <div class="label">Tags</div>
+            <div class="detail">role / acl:group / src:url / tier</div>
+          </div>
+          <div class="arch-component">
+            <div class="label">Namespace</div>
+            <div class="detail">Team isolation (same DB, different data)</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="arch-box">
+        <div class="arch-header">🤖 Synthesis (Optional LLM)</div>
+        <p class="muted" style="margin:8px 0;font-size:13px">LLM reads ranked memories, synthesizes cited answer. Or return extractive (ranked snippets) if no LLM configured.</p>
+        <div class="arch-flow">
+          <div class="arch-pill">Claude</div>
+          <div class="arch-pill">OpenAI</div>
+          <div class="arch-pill">Ollama</div>
+          <div class="arch-pill">Company LLM</div>
+        </div>
+      </div>
+
+      <div class="arch-box">
+        <div class="arch-header">⬆️ Output</div>
+        <div class="arch-flow">
+          <div class="arch-pill">Answer</div>
+          <div class="arch-arrow">+</div>
+          <div class="arch-pill">Citations [1][2][3]</div>
+          <div class="arch-arrow">+</div>
+          <div class="arch-pill">Role-voiced</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Connectors diagram -->
+    <h3 style="margin-top:32px;margin-bottom:16px">Connectors — feeding the store</h3>
+    <div class="arch-diagram">
+      <div class="arch-grid">
+        <div class="arch-component">
+          <div class="label">📋 Jira</div>
+          <div class="detail">Issues, comments, decisions. JQL paging, incremental.</div>
+        </div>
+        <div class="arch-component">
+          <div class="label">📖 Confluence</div>
+          <div class="detail">Pages by space. CQL paging, chunked by heading, incremental.</div>
+        </div>
+        <div class="arch-component">
+          <div class="label">🔀 GitHub/GitLab PRs</div>
+          <div class="detail">Merged PRs only (the "why" that shipped).</div>
+        </div>
+        <div class="arch-component">
+          <div class="label">💻 Code (GitLab)</div>
+          <div class="detail">Mines business rules from codebase for the PO.</div>
+        </div>
+        <div class="arch-component">
+          <div class="label">🤖 IDE Activity</div>
+          <div class="detail">Devin sessions, IntelliJ commits + TODOs, live ACP tap.</div>
+        </div>
+        <div class="arch-component highlight">
+          <div class="label">💬 team_capture</div>
+          <div class="detail">Deliberate push: end-of-work chat → memories, tagged to ticket.</div>
+        </div>
+      </div>
+      <p class="muted" style="text-align:center;margin-top:12px;font-size:13px">All connectors → same MemoryStorePG. Connectors embed + chunk + carry ACL from source (Jira security, Confluence restrictions).</p>
+    </div>
+
+    <!-- Why this architecture -->
+    <h3 style="margin-top:32px;margin-bottom:16px">Why this shape</h3>
+    <div class="grid two">
+      <div class="card">
+        <h4 style="margin-bottom:8px">Hybrid search (BM25 + pgvector)</h4>
+        <p class="muted" style="font-size:13px">Keywords find the exact phrase; semantics find the meaning. Fusing both catches "riskiest edge case" even if no tester used those exact words.</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px">ACL as tags (fail-closed)</h4>
+        <p class="muted" style="font-size:13px">No schema change to Postgres. Connectors just add acl:group tags. Unknown asker → see public only. Leaked Confluence page is hard to reverse.</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px">One namespace, roles reshape retrieval</h4>
+        <p class="muted" style="font-size:13px">Dev answer can pull PO's business rule. Tester sees both. Bridges the gap instead of building three silos.</p>
+      </div>
+      <div class="card">
+        <h4 style="margin-bottom:8px">Search → then synthesize</h4>
+        <p class="muted" style="font-size:13px">Retrieval bounds the LLM. Wrong search → confident wrong answer. Extractive fallback (no LLM) still works.</p>
+      </div>
+    </div>
   </section>
 
   <section id="install">
@@ -297,10 +498,10 @@ pip install git+https://github.com/xerxes-y/team-brain.git
 
 <script>
 (function(){
-  // seeded knowledge for SETL-204 — captured by the PO, the developer's investigation, and the tester.
+  // seeded knowledge for PROSET-9913 — captured by the PO, the developer's investigation, and the tester.
   // Generic settlement scenario: no company, names, account numbers, or internal ticket IDs.
   const MEM = {
-    intent:{role:'po', title:'SETL-204 — what it delivers',
+    intent:{role:'po', title:'PROSET-9913 — what it delivers',
       text:'When a settlement message arrives from the reconciliation service, auto-finalize cash transfers of type 2/3: match the transfer, book it (status → booked), and send a reply back to recon. Extends the existing type-8 finalize flow.'},
     formats:{role:'developer', title:'Investigation — message format differs per custodian',
       text:'Each custodian bank sends a different settlement message. Bank A: numeric client id + a transfer-id in the comment field. Banks B and C: a clearing-route code and no comment at all — so comment-based matching only works for Bank A.'},
@@ -316,8 +517,8 @@ pip install git+https://github.com/xerxes-y/team-brain.git
   // per-role preset questions -> {tool, cites:[memIds], answer (uses [n] markers)}
   const Q = {
     po:[
-      {q:'Summarise SETL-204 for me', tool:'team_explain_ticket', cites:['intent','match'],
-       a:'SETL-204 auto-finalizes cash transfers of type 2/3, the way the type-8 flow already does. [1]\nTrigger: a settlement message arrives from recon when a transfer clears at a custodian; the workflow matches the row, books it, and replies to recon. [1]\nThe matching logic differs per custodian bank. [2]'},
+      {q:'Summarise PROSET-9913 for me', tool:'team_explain_ticket', cites:['intent','match'],
+       a:'PROSET-9913 auto-finalizes cash transfers of type 2/3, the way the type-8 flow already does. [1]\nTrigger: a settlement message arrives from recon when a transfer clears at a custodian; the workflow matches the row, books it, and replies to recon. [1]\nThe matching logic differs per custodian bank. [2]'},
       {q:'What\'s still blocking this ticket?', tool:'team_assist', cites:['open'],
        a:'One open question for the BA: which lookup endpoint resolves the account for Bank C\'s clearing route. Bank C was added to the spec late and has no code branch yet — worth confirming before estimating. [1]'}
     ],

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>team-brain × OpenSpec — plan with specs, remember with a brain</title>
+<meta name="description" content="OpenSpec aligns you and your AI assistant before a change is built. team-brain preserves the team's reasoning after it ships. Together they close the whole loop: plan → build → remember → plan better." />
+<style>
+  :root{
+    --bg:#0f1117; --surface:#1a1d27; --surface2:#22263a; --border:#2e3350;
+    --brand1:#5b5bf0; --brand2:#9b6bff; --accent:#6c8aff; --accent2:#a78bfa;
+    --green:#4ade80; --yellow:#fbbf24; --pink:#f472b6; --cyan:#22d3ee; --orange:#fb923c;
+    --text:#e2e8f0; --muted:#8892b0; --code-bg:#0d1117; --radius:14px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,-apple-system,sans-serif;font-size:16px;line-height:1.7}
+  a{color:var(--accent);text-decoration:none}
+  a:hover{text-decoration:underline}
+  .wrap{max-width:880px;margin:0 auto;padding:0 24px}
+
+  header{background:linear-gradient(135deg,#0f1117 0%,#1a1040 50%,#0f1117 100%);border-bottom:1px solid var(--border);padding:72px 24px 56px;text-align:center;position:relative;overflow:hidden}
+  header::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse 80% 50% at 50% 0%,rgba(123,107,255,0.18) 0%,transparent 70%);pointer-events:none}
+  .hero-logo{height:56px;width:auto;filter:drop-shadow(0 6px 24px rgba(123,107,255,.35))}
+  .hero-x{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:24px}
+  .hero-x .x{font-size:28px;color:var(--muted)}
+  .hero-x .os{font-size:26px;font-weight:800;letter-spacing:-.01em;color:#fff;border:2px solid var(--orange);border-radius:12px;padding:8px 18px;background:rgba(251,146,60,.08)}
+  .badge{display:inline-block;background:rgba(123,107,255,0.15);border:1px solid rgba(123,107,255,0.4);color:var(--accent2);padding:4px 14px;border-radius:99px;font-size:13px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;margin-bottom:22px}
+  h1{font-size:clamp(30px,5vw,52px);font-weight:800;line-height:1.15;letter-spacing:-0.02em;margin-bottom:18px;background:linear-gradient(135deg,#fff 0%,var(--brand2) 55%,var(--brand1) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .subtitle{font-size:19px;color:var(--muted);max-width:660px;margin:0 auto 28px}
+  .cta{display:inline-block;background:linear-gradient(135deg,var(--brand1),var(--brand2));color:#fff;font-weight:600;padding:11px 22px;border-radius:10px;margin:4px}
+  .cta.ghost{background:transparent;border:1px solid var(--border);color:var(--text)}
+
+  main{padding:56px 0}
+  section{margin-bottom:56px}
+  h2{font-size:28px;font-weight:700;letter-spacing:-0.01em;margin-bottom:14px;color:#fff}
+  h2 .em{background:linear-gradient(135deg,var(--brand2),var(--accent));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  h3{font-size:18px;font-weight:700;margin:0 0 6px;color:#fff}
+  p{margin-bottom:14px;color:var(--text)}
+  .lead{font-size:18px;color:var(--muted)}
+  .muted{color:var(--muted)}
+
+  .grid{display:grid;gap:16px}
+  .grid.two{grid-template-columns:repeat(auto-fit,minmax(280px,1fr))}
+  .grid.three{grid-template-columns:repeat(auto-fit,minmax(230px,1fr))}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px}
+  .card .tag{font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin-bottom:8px;display:block}
+  .card.os-card{border-top:3px solid var(--orange)}
+  .card.tb-card{border-top:3px solid var(--brand2)}
+
+  code{background:var(--code-bg);border:1px solid var(--border);border-radius:5px;padding:1px 6px;font-family:'SF Mono',Consolas,monospace;font-size:14px;color:var(--accent2)}
+  pre{background:var(--code-bg);border:1px solid var(--border);border-radius:var(--radius);padding:18px;overflow-x:auto;margin:14px 0}
+  pre code{background:none;border:none;padding:0;color:#cdd6f4;font-size:13.5px;line-height:1.6}
+  .tok-c{color:var(--muted)} .tok-k{color:var(--pink)} .tok-s{color:var(--green)} .tok-o{color:var(--orange)}
+
+  table{width:100%;border-collapse:collapse;margin:14px 0;font-size:15px}
+  th,td{text-align:left;padding:10px 12px;border-bottom:1px solid var(--border)}
+  th{color:var(--accent2);font-weight:600}
+  td code{font-size:13px}
+
+  .flow{display:flex;flex-wrap:wrap;align-items:center;gap:10px;justify-content:center;margin:18px 0}
+  .pill{background:var(--surface2);border:1px solid var(--border);border-radius:99px;padding:8px 16px;font-size:14px}
+  .pill.os-pill{border-color:rgba(251,146,60,.5);background:rgba(251,146,60,.08)}
+  .pill.tb-pill{border-color:rgba(155,107,255,.5);background:rgba(155,107,255,.08)}
+  .arr{color:var(--accent);font-size:18px}
+
+  ul.feat{list-style:none}
+  ul.feat li{padding:8px 0 8px 26px;position:relative;border-bottom:1px solid var(--border)}
+  ul.feat li::before{content:'▸';position:absolute;left:0;color:var(--accent)}
+  ul.feat li:last-child{border-bottom:none}
+
+  /* ── architecture ── */
+  .arch-diagram{display:flex;flex-direction:column;gap:20px;margin:20px 0}
+  .arch-box{background:var(--surface2);border:1px solid var(--border);border-radius:var(--radius);padding:16px;position:relative}
+  .arch-box.os-box{border-color:rgba(251,146,60,.45)}
+  .arch-box.tb-box{border-color:rgba(155,107,255,.45)}
+  .arch-header{font-weight:700;color:var(--accent2);font-size:12px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .arch-box.os-box .arch-header{color:var(--orange)}
+  .arch-flow{display:flex;align-items:center;gap:12px;margin:12px 0;flex-wrap:wrap}
+  .arch-pill{background:rgba(123,107,255,.15);border:1px solid rgba(123,107,255,.3);padding:8px 12px;border-radius:20px;font-size:13px;color:var(--accent2);white-space:nowrap}
+  .arch-pill.os{background:rgba(251,146,60,.12);border-color:rgba(251,146,60,.35);color:var(--orange)}
+  .arch-arrow{color:var(--accent);font-size:18px}
+  .arch-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px;margin:12px 0}
+  .arch-component{background:var(--code-bg);border:2px solid var(--border);border-radius:10px;padding:14px;text-align:center}
+  .arch-component.highlight{border-color:var(--accent);background:rgba(108,138,255,.08)}
+  .arch-component.os-hl{border-color:var(--orange);background:rgba(251,146,60,.06)}
+  .arch-component .label{font-weight:700;color:#fff;font-size:13px;margin-bottom:8px}
+  .arch-component .detail{font-size:12px;color:var(--muted);line-height:1.4}
+  .down-arrow{text-align:center;color:var(--accent);font-size:22px;margin:-8px 0}
+
+  /* ── loop diagram ── */
+  .loop{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;margin:24px 0}
+  @media(max-width:720px){.loop{grid-template-columns:1fr}}
+  .loop-side{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:20px}
+  .loop-side.os-side{border-color:rgba(251,146,60,.45)}
+  .loop-side.tb-side{border-color:rgba(155,107,255,.45)}
+  .loop-mid{display:flex;flex-direction:column;justify-content:space-around;align-items:center;padding:0 18px;gap:8px}
+  @media(max-width:720px){.loop-mid{flex-direction:row;padding:12px 0}}
+  .loop-mid .lm{color:var(--accent);font-size:13px;text-align:center}
+  .loop-side .lt{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;margin-bottom:10px}
+  .loop-side.os-side .lt{color:var(--orange)}
+  .loop-side.tb-side .lt{color:var(--accent2)}
+  .loop-step{background:var(--code-bg);border:1px solid var(--border);border-radius:6px;padding:8px 12px;font-size:13px;margin-bottom:6px}
+
+  /* ── teamwork walkthrough ── */
+  .tw{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin:18px 0}
+  .tw-stage{display:grid;grid-template-areas:". po ." "a brain b" ". tester .";gap:14px;padding:22px;border-bottom:1px solid var(--border);align-items:center}
+  @media(max-width:720px){.tw-stage{grid-template-areas:"po" "a" "brain" "b" "tester"}}
+  .tw-node{background:var(--code-bg);border:2px solid var(--border);border-radius:12px;padding:12px;text-align:center;transition:.25s;position:relative}
+  .tw-node .who{font-weight:700;color:#fff;font-size:14px}
+  .tw-node .task{font-size:12px;color:var(--muted);margin-top:2px}
+  .tw-node .dir{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;border-radius:99px;padding:2px 10px;margin-top:8px;display:none}
+  .tw-node.acting{box-shadow:0 0 0 2px var(--accent2)}
+  .tw-node.acting .dir{display:inline-block}
+  .tw-node .dir.capture{color:var(--accent2);background:rgba(155,107,255,.12);border:1px solid rgba(155,107,255,.4)}
+  .tw-node .dir.ask{color:var(--cyan);background:rgba(34,211,238,.10);border:1px solid rgba(34,211,238,.4)}
+  #tw-po{grid-area:po} #tw-devA{grid-area:a} #tw-devB{grid-area:b} #tw-tester{grid-area:tester}
+  .tw-brain{grid-area:brain;background:radial-gradient(ellipse at 50% 30%,rgba(123,107,255,.25),transparent 75%),var(--code-bg);border:2px solid rgba(155,107,255,.5);border-radius:16px;padding:18px 12px;text-align:center;font-weight:800;color:#fff;transition:.25s}
+  .tw-brain span{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-top:4px}
+  .tw-brain.pulse{box-shadow:0 0 22px rgba(155,107,255,.55)}
+  .tw-panel{padding:18px 22px}
+  .tw-title{font-weight:700;color:#fff;margin-bottom:10px}
+  .tw-bubble{background:var(--code-bg);border:1px solid var(--border);border-left:3px solid var(--accent2);border-radius:8px;padding:12px 14px;font-size:14px;white-space:pre-wrap}
+  .tw-bubble .q{color:var(--cyan);font-weight:600}
+  .tw-bubble .cited{color:var(--accent2)}
+  .tw-note{font-size:13px;color:var(--muted);margin-top:10px}
+  .tw-note strong{color:var(--green)}
+  .tw-ctrl{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px}
+  .tw-ctrl button{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 16px;border-radius:8px;font-size:14px;font-weight:600;cursor:pointer}
+  .tw-ctrl button:disabled{opacity:.35;cursor:default}
+  .tw-ctrl button:not(:disabled):hover{border-color:var(--accent)}
+  .tw-dot{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--border);margin:0 3px;cursor:pointer}
+  .tw-dot.on{background:var(--accent2)}
+
+  /* ── interactive demo (shared pattern with blog.html) ── */
+  .demo{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden}
+  .demo-top{display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--surface2);border-bottom:1px solid var(--border)}
+  .dot{width:11px;height:11px;border-radius:50%}.dot.r{background:#f87171}.dot.y{background:#fbbf24}.dot.g{background:#4ade80}
+  .demo-top .t{margin-left:8px;font-size:13px;color:var(--muted)}
+  .demo-body{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  @media(max-width:720px){.demo-body{grid-template-columns:1fr}}
+  .demo-left{padding:18px;border-right:1px solid var(--border)}
+  @media(max-width:720px){.demo-left{border-right:none;border-bottom:1px solid var(--border)}}
+  .demo-right{padding:18px;min-height:320px}
+  .roles{display:flex;gap:6px;margin-bottom:14px}
+  .role-btn{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--muted);padding:8px 6px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;transition:.15s}
+  .role-btn.active{color:#fff}
+  .role-btn[data-r="po"].active{border-color:var(--cyan);background:rgba(34,211,238,.12)}
+  .role-btn[data-r="developer"].active{border-color:var(--green);background:rgba(74,222,128,.12)}
+  .role-btn[data-r="tester"].active{border-color:var(--yellow);background:rgba(251,191,36,.12)}
+  .q-label{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin:4px 0 8px}
+  .q-btn{display:block;width:100%;text-align:left;background:var(--code-bg);border:1px solid var(--border);color:var(--text);padding:10px 12px;border-radius:8px;margin-bottom:8px;cursor:pointer;font-size:14px;transition:.15s}
+  .q-btn:hover{border-color:var(--accent)}
+  .kb-title{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--accent2);margin:18px 0 8px}
+  .mem{background:var(--code-bg);border:1px solid var(--border);border-left:3px solid var(--border);border-radius:6px;padding:9px 11px;margin-bottom:7px;font-size:13px;transition:.2s}
+  .mem.spec{border-left-color:var(--orange)}
+  .mem.chat{border-left-color:var(--brand2)}
+  .mem.commit{border-left-color:var(--green)}
+  .mem .mt{font-weight:600;color:#fff;font-size:12px}
+  .mem .mx{color:var(--muted);font-size:12.5px}
+  .mem .origin{display:inline-block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;border-radius:99px;padding:1px 8px;margin-left:6px;vertical-align:1px}
+  .mem.spec .origin{color:var(--orange);background:rgba(251,146,60,.12);border:1px solid rgba(251,146,60,.35)}
+  .mem.chat .origin{color:var(--accent2);background:rgba(155,107,255,.12);border:1px solid rgba(155,107,255,.35)}
+  .mem.commit .origin{color:var(--green);background:rgba(74,222,128,.12);border:1px solid rgba(74,222,128,.3)}
+  .mem.hot{border-color:var(--accent2);box-shadow:0 0 0 1px var(--accent2);background:rgba(167,139,250,.08)}
+  .ans{font-size:14.5px;white-space:pre-wrap;min-height:120px}
+  .ans .cite{color:var(--accent2);font-weight:600;cursor:pointer}
+  .ans .src{margin-top:14px;padding-top:10px;border-top:1px solid var(--border);font-size:12.5px;color:var(--muted)}
+  .ans .tool{display:inline-block;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em;color:var(--accent);background:rgba(108,138,255,.12);border:1px solid rgba(108,138,255,.3);border-radius:99px;padding:2px 10px;margin-bottom:12px}
+  .cursor{display:inline-block;width:7px;height:15px;background:var(--accent);animation:bl 1s steps(2) infinite;vertical-align:-2px}
+  @keyframes bl{0%,50%{opacity:1}51%,100%{opacity:0}}
+  .demo-hint{text-align:center;color:var(--muted);font-size:13px;padding:10px}
+
+  footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:14px}
+  .built-on{display:flex;align-items:center;justify-content:center;gap:16px;margin-bottom:16px}
+  .built-on img{height:44px;width:auto;border-radius:10px}
+  .built-on span{color:var(--muted);font-size:20px}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="hero-x">
+      <img src="assets/wordmark.svg" alt="team-brain" class="hero-logo" />
+      <span class="x">×</span>
+      <span class="os">OpenSpec</span>
+    </div>
+    <span class="badge">Connector shipped · better together</span>
+    <h1>Plan with specs.<br/>Remember with a brain.</h1>
+    <p class="subtitle">OpenSpec aligns you and your AI assistant on a change <em>before</em> it's built. team-brain preserves the team's reasoning <em>after</em> it ships — across tickets, roles, and time. Wire them together and the loop closes: every archived spec becomes memory, and every new spec starts from what the team already knows.</p>
+    <a class="cta" href="#why">Why — the logical case</a>
+    <a class="cta ghost" href="#demo">▶ See the loop in action</a>
+    <a class="cta ghost" href="https://github.com/xerxes-y/team-brain">team-brain</a>
+    <a class="cta ghost" href="https://github.com/Fission-AI/openspec">OpenSpec</a>
+    <p class="muted" style="margin-top:14px;font-size:14px">New to team-brain? <a href="blog.html">Read the intro first →</a></p>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <section>
+    <h2>Two tools, two halves of the same problem</h2>
+    <p class="lead">AI-assisted teams lose knowledge twice. <strong>Before</strong> a change: the assistant builds the wrong thing because requirements live only in chat. <strong>After</strong> a change: the reasoning behind it evaporates — the spec was written, the gotchas weren't, and three sprints later someone re-asks or silently breaks it.</p>
+    <div class="grid two">
+      <div class="card os-card">
+        <span class="tag" style="color:var(--orange)">Before — OpenSpec</span>
+        <h3>Spec-driven development</h3>
+        <p class="muted">Slash-command workflow (<code>/opsx:propose</code> → <code>apply</code> → <code>archive</code>) that turns a vague prompt into a proposal, spec scenarios, a design, and a task list under <code>openspec/changes/</code> — so the AI assistant builds the <em>right</em> thing.</p>
+        <p class="muted"><strong>Unit of knowledge:</strong> one change, authored deliberately, by a developer, living in the repo.</p>
+      </div>
+      <div class="card tb-card">
+        <span class="tag">After — team-brain</span>
+        <h3>Role-aware org memory</h3>
+        <p class="muted">Connectors (Jira, Confluence, PRs, IDE) + deliberate <code>team_capture</code> pull the team's reasoning into one searchable store. <code>team_assist</code> answers with citations, in the asker's role voice — PO, developer, or tester.</p>
+        <p class="muted"><strong>Unit of knowledge:</strong> everything the team learned, captured as it happens, searchable forever.</p>
+      </div>
+    </div>
+    <table>
+      <tr><th></th><th style="color:var(--orange)">OpenSpec alone</th><th>team-brain alone</th><th>Together</th></tr>
+      <tr><td>AI builds the right change</td><td>✅</td><td>—</td><td>✅</td></tr>
+      <tr><td>Chat gotchas survive the sprint</td><td>—</td><td>✅</td><td>✅</td></tr>
+      <tr><td>PO &amp; tester can query dev knowledge</td><td>—</td><td>✅</td><td>✅</td></tr>
+      <tr><td>Archived specs stay findable</td><td>folders you browse</td><td>—</td><td>✅ cited answers</td></tr>
+      <tr><td>New proposals start from org memory</td><td>blank page</td><td>—</td><td>✅ <code>team_assist</code> first</td></tr>
+    </table>
+  </section>
+
+  <section id="why">
+    <h2>The logical case — <span class="em">step by step</span></h2>
+    <p class="lead">Not a feature list. A chain of premises — check each one against your own team. If they hold, the conclusion isn't optional.</p>
+    <div class="grid two">
+      <div class="card">
+        <span class="tag">Premise 1 — verifiable in your last sprint</span>
+        <p class="muted">Every ticket produces reasoning that is <strong>in nobody's artifact</strong>: why this approach, which options were rejected, which gotcha almost shipped a bug. Test it: the last time someone asked "why is it done this way?" — was the answer in Jira, or in someone's head?</p>
+      </div>
+      <div class="card">
+        <span class="tag">Premise 2 — check your Slack</span>
+        <p class="muted">That reasoning <strong>gets asked for again</strong>: by the tester reconciling expected vs actual, by the next dev touching the code, by every new hire. Each re-ask interrupts two people; when the person who knew rotates off, the answer is gone entirely.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Premise 3 — you already ran this experiment</span>
+        <p class="muted"><strong>Manual documentation doesn't fix it.</strong> Writing docs costs the most effort at exactly the moment incentive is lowest — the work is done. Your company has Confluence. People still re-ask. That's not a discipline failure; it's the predictable outcome of the incentive structure.</p>
+      </div>
+      <div class="card">
+        <span class="tag">Premise 4 — vocabulary mismatch</span>
+        <p class="muted">The person who needs the knowledge <strong>uses different words</strong> than the person who produced it. The tester asks "riskiest edge case"; the dev wrote "shared clearing account". Keyword search — Confluence's, Jira's — returns nothing. Zero shared words, same fact.</p>
+      </div>
+    </div>
+    <div class="card" style="margin-top:16px;border-left:3px solid var(--brand2)">
+      <h3>∴ Therefore</h3>
+      <p class="muted">If capture must be near-zero-effort at the moment knowledge exists (from P3), it has to be <strong>automatic connectors + a one-command push</strong> — not a docs habit. If retrieval must cross role vocabularies (from P4), it has to be <strong>search by meaning with role-aware ranking</strong> — not keyword search. Add citations (so answers can be trusted) and fail-closed ACL — access control that <em>hides</em> anything it isn't sure the asker may see — and you've derived team-brain's design. It isn't a product category we invented — it's the conclusion of the premises.</p>
+    </div>
+    <table>
+      <tr><th>The arithmetic</th><th>Without</th><th>With team-brain</th></tr>
+      <tr><td>One "why does this rule exist?"</td><td>20 min × 2 people, interrupt + context switch</td><td>~30 s, one query, nobody interrupted</td></tr>
+      <tr><td>Frequency (be conservative)</td><td>3–5× per sprint per team</td><td>same questions, answered from the store</td></tr>
+      <tr><td>Cost per sprint</td><td>≈ 2–3.5 person-hours, every sprint, forever</td><td>the minutes it takes connectors to run</td></tr>
+      <tr><td>A senior dev leaves</td><td>their "why" leaves with them</td><td>their commits, chats, and specs stay queryable</td></tr>
+    </table>
+    <p class="muted">And the objections, honestly: <strong>"We have Confluence/Jira"</strong> — they hold artifacts; P1 is about the reasoning between artifacts, and P3 explains why they didn't solve it. <strong>"The other team has OpenSpec"</strong> — specs record decisions made <em>before</em> building; the counterparty-account gotcha below was found <em>during</em> building and made no spec. <strong>"Nobody will capture"</strong> — most capture is passive (connectors over what you already produce); the deliberate part is one command, and yes: if a team does neither, the store stays empty. That's the one honest precondition, stated on the tin.</p>
+  </section>
+
+  <section id="teamwork">
+    <h2>The two objections from our own demo — <span class="em">answered with a walkthrough</span></h2>
+    <p class="lead">When OpenSpec was demoed here, two objections came up. Both are real. Both are <em>knowledge</em> problems — which is exactly the half team-brain solves. (The coordination half — merging files, assigning work — stays git and Jira; no tool should pretend otherwise.)</p>
+    <div class="grid two">
+      <div class="card">
+        <span class="tag" style="color:var(--orange)">Objection 1 · raised at the demo</span>
+        <h3>"Two people on related tasks can't use it together"</h3>
+        <p class="muted">True — an OpenSpec change is one folder with effectively one author. Person B can't see person A's in-flight decisions until the spec merges, so they diverge or duplicate. <strong>team-brain's answer:</strong> everyone's commits, captures, and specs land in one store tagged to the ticket. B <em>queries</em> A's decisions before starting — nobody waits, nobody guesses, nobody is interrupted.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="color:var(--yellow)">Objection 2 · raised at the demo</span>
+        <h3>"Mid-task I realize another task must come first"</h3>
+        <p class="muted">True — <code>tasks.md</code> is a pre-implementation checklist; a dependency discovered <em>during</em> the work has no home in it. <strong>team-brain's answer:</strong> capture the constraint the moment it's found — one command, or just a TODO/commit message the connectors pick up automatically. Whoever touches either task next finds it, cited, instead of re-discovering it.</p>
+      </div>
+    </div>
+
+    <h3 style="margin:28px 0 8px">One epic, four people, zero meetings</h3>
+    <p class="muted">It starts where every epic actually starts: a <strong>PO writing tickets in business language</strong> — the language that later makes devs and testers ask "what does this actually mean?". Then Dev A owns <strong>PROSET-9913</strong> (matching), Dev B owns <strong>PROSET-9914</strong> (the reply service — related, and, it turns out, dependent), and the tester owns the epic's test ticket. Step through the week: every arrow into the brain is a capture, every arrow out is a question answered — including the questions about the ticket itself.</p>
+    <div class="tw">
+      <div class="tw-stage">
+        <div class="tw-node" id="tw-po"><div class="who">📋 PO</div><div class="task">writes the epic's tickets</div><span class="dir"></span></div>
+        <div class="tw-node" id="tw-devA"><div class="who">💻 Dev A</div><div class="task">PROSET-9913 · matching</div><span class="dir"></span></div>
+        <div class="tw-brain" id="tw-brain">🧠 team-brain<span>namespace: settlement-ops</span></div>
+        <div class="tw-node" id="tw-devB"><div class="who">💻 Dev B</div><div class="task">PROSET-9914 · reply service</div><span class="dir"></span></div>
+        <div class="tw-node" id="tw-tester"><div class="who">🧪 Tester</div><div class="task">epic test ticket</div><span class="dir"></span></div>
+      </div>
+      <div class="tw-panel">
+        <div class="tw-title" id="tw-title"></div>
+        <div class="tw-bubble" id="tw-bubble"></div>
+        <div class="tw-note" id="tw-note"></div>
+        <div class="tw-ctrl">
+          <button id="tw-prev">‹ back</button>
+          <span id="tw-dots"></span>
+          <button id="tw-next">next ›</button>
+        </div>
+      </div>
+    </div>
+    <p class="muted">Nothing above was a meeting, a Slack ping, or a status document. Knowledge was written once, at the moment it existed, and queried when someone needed it. Jira still says <em>who does what</em>; team-brain carries <em>what was decided and learned</em> — including the ordering constraints and gotchas no planning artifact can hold. Closing that gap between people on related tasks is why team-brain exists.</p>
+  </section>
+
+  <section>
+    <h2>The loop: <span class="em">specs become memory, memory feeds specs</span></h2>
+    <p class="lead">Neither tool needs the other — but each one's exhaust is the other's fuel.</p>
+    <div class="loop">
+      <div class="loop-side os-side">
+        <div class="lt">OpenSpec — planning</div>
+        <div class="loop-step"><code>/opsx:explore</code> — understand the area</div>
+        <div class="loop-step"><code>/opsx:propose</code> — proposal + specs + design</div>
+        <div class="loop-step"><code>/opsx:apply</code> — implement against the spec</div>
+        <div class="loop-step"><code>/opsx:archive</code> — change complete</div>
+      </div>
+      <div class="loop-mid">
+        <div class="lm">memory in<br/>⟵</div>
+        <div class="lm">⟶<br/>specs out</div>
+      </div>
+      <div class="loop-side tb-side">
+        <div class="lt">team-brain — memory</div>
+        <div class="loop-step"><code>team_assist</code> — "what do we already know here?"</div>
+        <div class="loop-step">openspec connector — archived changes → memories</div>
+        <div class="loop-step"><code>team_capture</code> — the gotchas that never made the spec</div>
+        <div class="loop-step"><code>team_test_plan</code> — spec scenarios → tester's plan</div>
+      </div>
+    </div>
+    <div class="flow">
+      <span class="pill os-pill">explore</span><span class="arr">→</span>
+      <span class="pill tb-pill">team_assist (memory in)</span><span class="arr">→</span>
+      <span class="pill os-pill">propose · apply · archive</span><span class="arr">→</span>
+      <span class="pill tb-pill">connector ingests (memory out)</span><span class="arr">→</span>
+      <span class="pill os-pill">next change starts smarter</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>Three integration points, <span class="em">zero workflow change</span></h2>
+    <p class="muted">OpenSpec stays the authoring tool. team-brain stays the memory. Nobody on either team changes how they work.</p>
+    <div class="grid three">
+      <div class="card">
+        <span class="tag" style="color:var(--orange)">1 · Ingest</span>
+        <h3>openspec connector</h3>
+        <p class="muted">Walks <code>openspec/changes/</code>: <code>proposal.md</code> → the <em>why</em> (PO boosts it), <code>specs/*.md</code> → requirements &amp; scenarios (tester gold), <code>design.md</code> → the <em>how</em> (dev boosts it). Jira keys in the change → <code>ticket:</code> tags, repo visibility → <code>acl:</code> tags, file paths → <code>src:</code> citations.</p>
+      </div>
+      <div class="card">
+        <span class="tag">2 · Recall</span>
+        <h3>explore → team_assist</h3>
+        <p class="muted">One line in the OpenSpec workflow instructions: before proposing, ask <code>team_assist("what do we know about &lt;area&gt;?")</code>. New proposals start from past specs, PR reasoning, and captured chats — not a blank page.</p>
+      </div>
+      <div class="card">
+        <span class="tag" style="color:var(--yellow)">3 · Bridge</span>
+        <h3>scenarios → test_plan</h3>
+        <p class="muted">OpenSpec's spec scenarios are almost ready-made test input. Ingested and tagged, <code>team_test_plan</code> merges them with the developer's implementation gotchas — the tester gets <em>both sides</em> without chasing anyone.</p>
+      </div>
+    </div>
+    <pre><code><span class="tok-c"># the whole integration, from the team-brain side:</span>
+python3 -c <span class="tok-s">"from teambrain.connectors.openspec import sync; \
+  print(sync('/path/to/repo', namespace='team-eng'))"</span>
+
+<span class="tok-c"># and one line added to the OpenSpec team's workflow instructions:</span>
+<span class="tok-o">/opsx:explore</span>  →  <span class="tok-k">first call</span> team_assist(area, role=<span class="tok-s">"developer"</span>)</code></pre>
+  </section>
+
+  <section id="demo">
+    <h2>See it work — <span class="em">one answer, both sources</span></h2>
+    <p class="muted">Ticket <strong>PROSET-9913</strong> — auto-finalize cash transfers when a settlement message arrives. The change was planned with OpenSpec (proposal, spec scenarios, design) and archived. The developer's chat — including a gotcha that <em>never made the spec</em> — was captured with <code>team_capture</code>. Both now live in the same brain. Pick a role and watch the tester's question get answered from the <span style="color:var(--orange)">■ spec</span> and the <span style="color:var(--accent2)">■ chat</span> in a single cited answer — that's the "together" part.</p>
+
+    <div class="demo">
+      <div class="demo-top"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="t">team-brain · namespace: settlement-ops · sources: openspec + capture + git</span></div>
+      <div class="demo-body">
+        <div class="demo-left">
+          <div class="roles">
+            <button class="role-btn" data-r="po">📋 Product Owner</button>
+            <button class="role-btn" data-r="developer">💻 Developer</button>
+            <button class="role-btn active" data-r="tester">🧪 Tester</button>
+          </div>
+          <div class="q-label">Ask a question</div>
+          <div id="qs"></div>
+          <div class="kb-title">What's in the brain (PROSET-9913)</div>
+          <div id="kb"></div>
+        </div>
+        <div class="demo-right">
+          <div class="ans" id="ans"><span class="demo-hint">← pick a question to run it</span></div>
+        </div>
+      </div>
+    </div>
+    <p class="muted" style="text-align:center;margin-top:12px;font-size:13px">Canned data, running entirely in your browser — the real product answers the same way over MCP (the standard protocol IDE agents like Devin, Claude, and Cursor use to call tools).</p>
+  </section>
+
+  <section>
+    <h2>Why the spec alone <span class="em">isn't enough</span></h2>
+    <p>A spec records <strong>decisions</strong> — and only the ones a developer chose to write down before building. The expensive knowledge is what surfaces <em>during</em> the work:</p>
+    <div class="grid two">
+      <div class="card os-card">
+        <h3 style="color:var(--orange)">What the spec captured</h3>
+        <ul class="feat">
+          <li>Match settlement rows per custodian bank</li>
+          <li>Scenario: Bank A sends a transfer-id in the comment</li>
+          <li>Design: extend the existing type-8 finalize flow</li>
+        </ul>
+      </div>
+      <div class="card tb-card">
+        <h3 style="color:var(--accent2)">What only the chat had</h3>
+        <ul class="feat">
+          <li>⚠ The source account is <em>always</em> the shared clearing account — match on the counterparty or Banks B/C silently mis-book</li>
+          <li>Bank C's lookup endpoint is still an open question for the BA</li>
+          <li>Why the team rejected comment-based matching for B/C</li>
+        </ul>
+      </div>
+    </div>
+    <p class="muted">OpenSpec can't hold the right column — it's a planning artifact, not a capture system. team-brain can't produce the left column — it's a memory, not a planning discipline. The tester needs <strong>both columns in one answer</strong>. That's the integration.</p>
+  </section>
+
+  <section>
+    <h2>Where OpenSpec sits in the architecture</h2>
+    <p class="lead">On the write path, as one more connector source — same category as Confluence pages or PR descriptions. The read path doesn't change at all.</p>
+    <div class="arch-diagram">
+      <div class="arch-box os-box">
+        <div class="arch-header">Sources (write path)</div>
+        <div class="arch-grid">
+          <div class="arch-component"><div class="label">📋 Jira</div><div class="detail">tickets + comments</div></div>
+          <div class="arch-component"><div class="label">📖 Confluence</div><div class="detail">pages by space</div></div>
+          <div class="arch-component"><div class="label">🔀 PRs</div><div class="detail">the merged "why"</div></div>
+          <div class="arch-component"><div class="label">🤖 IDE</div><div class="detail">Devin / IntelliJ activity</div></div>
+          <div class="arch-component"><div class="label">💬 team_capture</div><div class="detail">deliberate chat push</div></div>
+          <div class="arch-component os-hl"><div class="label">📐 OpenSpec — NEW</div><div class="detail">openspec/changes/*<br/>proposal · specs · design</div></div>
+        </div>
+      </div>
+      <div class="down-arrow">↓ &nbsp; chunk + tag (<code>ticket:</code> / <code>acl:</code> / <code>src:</code>) + embed &nbsp; ↓</div>
+      <div class="arch-box">
+        <div class="arch-header">💾 PostgreSQL (MemoryStorePG)</div>
+        <div class="arch-flow">
+          <div class="arch-pill">BM25 tsvector</div>
+          <div class="arch-pill">pgvector (meaning)</div>
+          <div class="arch-pill">RRF fusion</div>
+          <div class="arch-pill">ACL fail-closed</div>
+          <div class="arch-pill">namespaces</div>
+        </div>
+      </div>
+      <div class="down-arrow">↓</div>
+      <div class="arch-box tb-box">
+        <div class="arch-header">Read path — unchanged</div>
+        <div class="arch-flow">
+          <div class="arch-pill">team_assist</div>
+          <div class="arch-pill">team_draft_ticket (PO)</div>
+          <div class="arch-pill">team_explain_ticket (dev)</div>
+          <div class="arch-pill">team_test_plan (tester)</div>
+        </div>
+        <p class="muted" style="font-size:13px;margin:8px 0 0">…and one optional loop-back: OpenSpec's <code>explore</code> step calls <code>team_assist</code> before proposing, so new specs start from org memory.</p>
+      </div>
+    </div>
+    <p class="muted">Per change folder: <code>proposal.md</code> → tier <em>semantic</em> (the why), <code>specs/*.md</code> → tier <em>semantic</em> (scenarios), <code>design.md</code> → tier <em>procedural</em> (the how). <code>tasks.md</code> is skipped — an ephemeral checklist is stale the day it merges. Boundaries stay clean: team-brain never writes OpenSpec files or manages the change lifecycle, exactly as it drafts Jira tickets but never files them.</p>
+  </section>
+
+  <section>
+    <h2>What this means for a <span class="em">multi-team company</span></h2>
+    <div class="grid three">
+      <div class="card">
+        <h3>Teams on OpenSpec</h3>
+        <p class="muted">Keep the workflow. Point the connector at the repo once — archived changes become searchable, cited, ACL'd memories. Their specs now answer other teams' questions too.</p>
+      </div>
+      <div class="card">
+        <h3>Teams without it</h3>
+        <p class="muted">Jira, Confluence, PRs, and IDE capture already feed the brain. No spec discipline required to get value — adopt OpenSpec later (or never) without re-platforming.</p>
+      </div>
+      <div class="card">
+        <h3>PO &amp; testers everywhere</h3>
+        <p class="muted">The roles OpenSpec can't reach — its artifacts live in a git repo they don't work in — get the same knowledge through <code>team_draft_ticket</code> and <code>team_test_plan</code>.</p>
+      </div>
+    </div>
+    <p>The pitch in one line: <strong>OpenSpec is per-team planning hygiene; team-brain is the shared memory layer across teams and roles — and it makes every OpenSpec team's specs worth more, not less.</strong></p>
+  </section>
+
+  <section id="teams-bridge">
+    <h2>Beyond the IDE — <span class="em">answer other teams in Microsoft Teams</span></h2>
+    <p class="lead">The brain isn't tied to the IDE. The same read path — search, ACL, role rerank, synthesis — sits behind a thin, read-only Teams bridge, so anyone in a channel can ask and get the same cited answer. With synthesis pointed at an <strong>internal LLM</strong>, nothing leaves the network.</p>
+    <div class="flow">
+      <span class="pill">@team-brain why do we match on the counterparty?</span><span class="arr">→</span>
+      <span class="pill">webhook (HMAC-verified)</span><span class="arr">→</span>
+      <span class="pill tb-pill">team_assist</span><span class="arr">→</span>
+      <span class="pill">ACL fail-closed</span><span class="arr">→</span>
+      <span class="pill">internal LLM cites</span><span class="arr">→</span>
+      <span class="pill">answer in the thread</span>
+    </div>
+    <div class="grid three">
+      <div class="card">
+        <h3>Internal LLM: config, not code</h3>
+        <p class="muted">Synthesis is a pluggable seam — point it at any OpenAI-compatible internal endpoint (company gateway, vLLM, Ollama). Embeddings already run local. The whole pipeline stays in-house.</p>
+      </div>
+      <div class="card">
+        <h3>Read-only by design</h3>
+        <p class="muted">The bridge only answers — it can't write memories, run connectors, or file tickets. Capture stays where the work happens (IDE, git, Jira); Teams is a question surface.</p>
+      </div>
+      <div class="card">
+        <h3>ACL makes it safe to open up</h3>
+        <p class="muted">A Teams webhook can't know the asker's AD groups, so the ACL treats them as unknown: <strong>public memories only</strong>, fail-closed. Granting a channel more is an explicit, per-channel setting — never a default.</p>
+      </div>
+    </div>
+    <pre><code><span class="tok-c"># ships in the repo — stdlib only, no Bot Framework SDK:</span>
+export TEAMBRAIN_TEAMS_SECRET=&lt;token from the Teams outgoing webhook&gt;
+export TEAMBRAIN_NAMESPACE=team-eng
+export TEAMBRAIN_SYNTH=teambrain.synth_openai:synth OPENAI_BASE_URL=http://llm.internal/v1
+python3 -m teambrain.teams          <span class="tok-c"># then: @team-brain as tester: what should I test for PROSET-9913?</span></code></pre>
+  </section>
+
+  <section id="proposal">
+    <h2>The proposal — <span class="em">step 1 already ships</span></h2>
+    <ul class="feat">
+      <li><strong>✅ Shipped: <code>teambrain/connectors/openspec.py</code></strong> — walks the <code>openspec/</code> tree (proposals, specs, designs; <code>tasks.md</code> skipped), tags (<code>ticket:</code>, <code>src:</code>, <code>acl:</code> fail-closed), saves. Stdlib-only, offline test suite, wired into <code>team_sync</code>. This page's pilot commands run today.</li>
+      <li><strong>Next: one line in the OpenSpec team's workflow instructions</strong> — <code>explore</code> calls <code>team_assist</code> first. No OpenSpec code change; it's a prompt-level hook.</li>
+      <li><strong>Then: pilot with the team already on OpenSpec</strong> — ingest their archive, then show their PO a cited answer built from a spec they never opened.</li>
+    </ul>
+    <pre><code><span class="tok-c"># pilot, end to end:</span>
+pip install git+https://github.com/xerxes-y/team-brain.git
+export MEMENTO_DB_URL=postgresql://…  TEAMBRAIN_EMBED=local
+
+<span class="tok-c"># ingest the OpenSpec team's archive</span>
+python3 -c <span class="tok-s">"from teambrain.connectors.openspec import sync; \
+  print(sync('/repos/their-service', namespace='team-eng'))"</span>
+
+<span class="tok-c"># then, from any IDE with team-brain as an MCP server:</span>
+<span class="tok-k">&gt;</span> team_assist(<span class="tok-s">"why do we match on the counterparty account?"</span>, role=<span class="tok-s">"tester"</span>)
+<span class="tok-c">→ cited answer: [1] the archived OpenSpec design  [2] the captured dev chat</span></code></pre>
+  </section>
+
+</main>
+
+<footer>
+  <div class="built-on">
+    <img src="assets/logo.svg" alt="team-brain" />
+    <span>×</span>
+    <a href="https://github.com/Fission-AI/openspec" style="font-weight:800;color:#fff;border:2px solid var(--orange);border-radius:10px;padding:6px 14px;background:rgba(251,146,60,.08)">OpenSpec</a>
+  </div>
+  <p>team-brain · MIT licensed · storage engine by <a href="https://github.com/xerxes-y/memento">memento</a> · OpenSpec by <a href="https://github.com/Fission-AI/openspec">Fission-AI</a></p>
+  <p><a href="https://github.com/xerxes-y/team-brain">github.com/xerxes-y/team-brain</a></p>
+</footer>
+
+<script>
+(function(){
+  // PROSET-9913 knowledge, now from three origins: the archived OpenSpec change,
+  // team_capture'd chat, and the IntelliJ git connector. Generic scenario, no company data.
+  const ORIGIN={spec:'openspec', chat:'chat capture', commit:'git'};
+  const MEM = {
+    proposal:{kind:'spec', title:'proposal.md — why this change exists',
+      text:'Auto-finalize cash transfers of type 2/3 when a settlement message arrives from the reconciliation service: match the transfer, book it, reply to recon. Extends the existing type-8 finalize flow.'},
+    scenario:{kind:'spec', title:'specs/matching.md — scenario: per-custodian matching',
+      text:'WHEN a settlement message arrives from Bank A THEN match by the transfer-id in the comment field. WHEN it arrives from Bank B or C THEN resolve the account via the clearing-route lookup and match counterparty + currency + amount×(-1).'},
+    design:{kind:'spec', title:'design.md — how it\'s built',
+      text:'Reuse the type-8 finalize pipeline; add a custodian-format resolver in front. After a match: set the recon reference id, remap the cash-account id, flip status to booked, send reply {id, transaction_id}.'},
+    iban:{kind:'chat', title:'⚠ Gotcha — match the counterparty, NOT the source (never made the spec)',
+      text:'On every type-2 row the transfer\'s source account is ALWAYS the shared clearing account. Match on it and Bank B / C transfers silently mis-book. Found during implementation, after design.md was written.'},
+    open:{kind:'chat', title:'Open question for the BA',
+      text:'Which lookup endpoint resolves the account for Bank C\'s clearing route? Bank C was added to the spec late and has no code branch yet.'},
+    commit:{kind:'commit', title:'PROSET-9913 — feat: custodian resolver + counterparty match',
+      text:'Implements the format resolver from design.md; matching keyed on counterparty account per the investigation note. Banks A/B covered; C pending BA answer.'}
+  };
+  const Q = {
+    po:[
+      {q:'Summarise PROSET-9913 for me', tool:'team_explain_ticket', cites:['proposal','commit'],
+       a:'PROSET-9913 auto-finalizes cash transfers of type 2/3, extending the existing type-8 flow: match the transfer when a settlement message arrives, book it, reply to recon. [1]\nStatus: Banks A and B are implemented; Bank C is pending an answer from the BA. [2]\n\n↳ the summary comes from the OpenSpec proposal; the status from a git commit. The PO never opened either.'},
+      {q:'What\'s still blocking this ticket?', tool:'team_assist', cites:['open','commit'],
+       a:'One open question for the BA: which lookup endpoint resolves the account for Bank C\'s clearing route — Bank C was added to the spec late and has no code branch yet. [1]\nThe implementation confirms it: Banks A/B are covered, C is pending that answer. [2]'}
+    ],
+    developer:[
+      {q:'What was decided in the spec for type-2 finalize?', tool:'team_explain_ticket', cites:['design','scenario'],
+       a:'The archived OpenSpec change says: reuse the type-8 finalize pipeline with a custodian-format resolver in front; after a match set the recon reference id, remap the cash-account id, flip status to booked, and reply to recon. [1]\nMatching is per custodian: Bank A by the comment transfer-id, Banks B/C via the clearing-route lookup. [2]'},
+      {q:'Anything the spec does NOT tell me?', tool:'team_assist', cites:['iban','open'],
+       a:'Yes — two things that never made the spec:\n• The source account is ALWAYS the shared clearing account on type-2 rows; match on the counterparty or Bank B/C transfers silently mis-book. Found during implementation, after design.md was written. [1]\n• Bank C\'s lookup endpoint is still an open question for the BA. [2]\n\n↳ this is exactly what a planning artifact can\'t hold — and what capture does.'}
+    ],
+    tester:[
+      {q:'What should I test for type-2 finalize?', tool:'team_test_plan', cites:['scenario','iban','design'],
+       a:'Test plan — built from the spec AND the chat:\n• From the spec scenarios: Bank A matches by the comment transfer-id; Banks B/C via the clearing-route lookup with counterparty + currency + amount×(-1). [1]\n• Critical, from the captured chat: the source account is ALWAYS the shared clearing account — verify B/C rows match on the counterparty, or they silently mis-book. This is in no spec. [2]\n• After booking, from the design: reference id set, cash-account remapped, status = booked, reply sent to recon. [3]'},
+      {q:'What\'s the riskiest edge case here?', tool:'team_assist', cites:['iban','scenario'],
+       a:'The silent one: every type-2 row\'s source account is the SAME shared clearing account, so source-based matching happily mis-books Bank B and C transfers. The real discriminator is the counterparty account. [1]\nThe spec\'s scenario only says "match counterparty + currency + amount" — it never warns you WHY source-matching fails. The warning lives in the captured chat. [2]\n\n↳ one answer, two origins: OpenSpec archive + team_capture. Neither alone is enough.'}
+    ]
+  };
+
+  const qsEl=document.getElementById('qs'), kbEl=document.getElementById('kb'), ansEl=document.getElementById('ans');
+  let role='tester', typer=null;
+
+  function renderKB(){
+    kbEl.innerHTML='';
+    for(const id in MEM){const m=MEM[id];
+      const d=document.createElement('div'); d.className='mem '+m.kind; d.id='mem-'+id;
+      d.innerHTML='<div class="mt">'+m.title+'<span class="origin">'+ORIGIN[m.kind]+'</span></div><div class="mx">'+m.text+'</div>';
+      kbEl.appendChild(d);
+    }
+  }
+  function renderQs(){
+    qsEl.innerHTML='';
+    Q[role].forEach(item=>{
+      const b=document.createElement('button'); b.className='q-btn'; b.textContent=item.q;
+      b.onclick=()=>run(item); qsEl.appendChild(b);
+    });
+  }
+  function setRole(r){
+    role=r;
+    document.querySelectorAll('.role-btn').forEach(b=>b.classList.toggle('active',b.dataset.r===r));
+    renderQs();
+    ansEl.innerHTML='<span class="demo-hint">← pick a question to run it</span>';
+    document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+  }
+  function run(item){
+    if(typer) clearInterval(typer);
+    document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+    let body=item.a.replace(/\[(\d+)\]/g,(_,n)=>{
+      const id=item.cites[(+n)-1];
+      return '<span class="cite" data-m="'+id+'">['+n+']</span>';
+    });
+    const srcs=item.cites.map((id,i)=>'['+(i+1)+'] '+MEM[id].title+'  <span style="opacity:.6">('+ORIGIN[MEM[id].kind]+')</span>').join('<br>');
+    const head='<span class="tool">'+item.tool+'</span>\n';
+    const full=head+body+'<div class="src">Sources:<br>'+srcs+'</div>';
+    ansEl.innerHTML=head+'<span id="typ"></span><span class="cursor"></span>';
+    const typEl=document.getElementById('typ'); let i=0; const plain=item.a;
+    const step=Math.max(3,Math.ceil(plain.length/28));
+    typer=setInterval(()=>{
+      i+=step; typEl.textContent=plain.slice(0,i);
+      if(i>=plain.length){clearInterval(typer); typer=null;
+        ansEl.innerHTML=full;
+        ansEl.querySelectorAll('.cite').forEach(c=>{
+          const hot=()=>{document.querySelectorAll('.mem').forEach(m=>m.classList.remove('hot'));
+            const t=document.getElementById('mem-'+c.dataset.m); if(t){t.classList.add('hot'); t.scrollIntoView({block:'nearest',behavior:'smooth'});}};
+          c.onmouseenter=hot; c.onclick=hot;
+        });
+        const first=document.getElementById('mem-'+item.cites[0]); if(first) first.classList.add('hot');
+      }
+    },12);
+  }
+  document.querySelectorAll('.role-btn').forEach(b=>b.onclick=()=>setRole(b.dataset.r));
+  renderKB(); renderQs();
+})();
+
+(function(){
+  // teamwork walkthrough: 5 steps, each = one person either capturing into or
+  // querying the shared brain. Directly enacts the two demo objections.
+  const STEPS = [
+    {actor:'tw-po', mode:'capture',
+     title:'Day 0 — the PO drafts the tickets from mined business rules, and captures his analysis',
+     bubble:'<span class="q">team_draft_ticket("auto-finalize type-2/3 cash transfers on settlement messages")</span>\n\nTitle: Auto-finalize type 2/3 transfers on settlement\nBackground: type-8 already auto-finalizes; types 2/3 are booked by hand today (rule mined from the settlement code <span class="cited">[1]</span>)\nAC: match per custodian · book · reply to recon\n\n/team-capture ticket=PROSET-9913 role=po → business analysis saved',
+     note:'The ticket starts <strong>precise</strong>: acceptance criteria grounded in rules mined from the actual code, cited — a PO who doesn\'t read Java writes an accurate ticket. And his business reasoning is saved: tomorrow\'s "what did he mean?" questions already have answers.'},
+    {actor:'tw-devA', mode:'ask',
+     title:'Day 1 — Dev A picks up the ticket; the business language is unclear',
+     bubble:'<span class="q">team_explain_ticket("PROSET-9913")</span>\n\nBusiness intent: when recon confirms a transfer cleared at a custodian, book it with no manual touch — same policy type-8 already has (the PO\'s captured analysis <span class="cited">[1]</span>).\nWhere in code: the type-8 flow is the one to extend (mined rule <span class="cited">[2]</span>).',
+     note:'<strong>The vague-ticket problem, answered:</strong> "finalize" in business language became intent + code paths in dev language — from the PO\'s own captured reasoning, without pinging the PO.'},
+    {actor:'tw-devA', mode:'capture',
+     title:'Day 1 — Dev A finishes the matching logic and captures what he learned',
+     bubble:'/team-capture ticket=PROSET-9913 role=developer\n\n→ saved: "⚠ The discriminator is the counterparty account — the source account is ALWAYS the shared clearing account. Bank C\'s lookup endpoint still open with the BA."',
+     note:'One command at the end of the work. Tagged to the ticket automatically — no doc written, no page updated.'},
+    {actor:'tw-devB', mode:'ask',
+     title:'Day 2 — Dev B starts the reply service and asks before coding',
+     bubble:'<span class="q">team_assist("what\'s already decided on the settlement epic?", role="developer")</span>\n\nMatching keys on the counterparty account, never the source <span class="cited">[1]</span>; message formats differ per custodian <span class="cited">[2]</span>; Bank C is still open with the BA <span class="cited">[3]</span>.',
+     note:'<strong>Objection 1, answered:</strong> B builds on A\'s in-flight decisions without waiting for a merge — and Dev A was never interrupted.'},
+    {actor:'tw-devB', mode:'capture',
+     title:'Day 3 — B hits the hidden dependency and captures it on the spot',
+     bubble:'/team-capture ticket=PROSET-9914\n\n→ saved: "9914 can only send its reply AFTER 9913 sets the recon reference id — the reply payload reads {id, transaction_id} from it. 9913\'s reference-id step must land first."',
+     note:'<strong>Objection 2, answered:</strong> the ordering constraint found <em>during</em> the work — the kind tasks.md can\'t hold — now has a home, tagged to both tickets.'},
+    {actor:'tw-devA', mode:'ask',
+     title:'Day 4 — A is about to refactor and asks what depends on his task',
+     bubble:'<span class="q">team_assist("anything depending on 9913\'s reference-id step?")</span>\n\nYes — 9914\'s reply payload reads it; Dev B captured the ordering constraint on day 3 <span class="cited">[1]</span>. Refactor without breaking that contract.',
+     note:'The dependency flows <em>back</em> to the person who could break it — B never had to warn A in person.'},
+    {actor:'tw-tester', mode:'ask',
+     title:'Day 5 — the tester plans across both tasks with one query',
+     bubble:'<span class="q">team_test_plan("settlement epic")</span>\n\n• Counterparty matching — source-account match silently mis-books (A\'s capture) <span class="cited">[1]</span>\n• Reply only after the reference id is set (B\'s dependency) <span class="cited">[2]</span>\n• Per-custodian scenarios (the OpenSpec archive) <span class="cited">[3]</span>',
+     note:'Four people\'s knowledge — the PO\'s business intent, both devs\' discoveries, the spec — in one cited answer; the tester chased nobody. This walkthrough is the reason team-brain was built.'}
+  ];
+  let i=0;
+  const $=id=>document.getElementById(id);
+  const dots=STEPS.map((_,n)=>{const d=document.createElement('span');d.className='tw-dot';
+    d.onclick=()=>{i=n;render();};$('tw-dots').appendChild(d);return d;});
+  function render(){
+    const s=STEPS[i];
+    document.querySelectorAll('.tw-node').forEach(n=>{n.classList.remove('acting');
+      const c=n.querySelector('.dir'); c.className='dir'; c.textContent='';});
+    const node=$(s.actor); node.classList.add('acting');
+    const chip=node.querySelector('.dir');
+    chip.className='dir '+s.mode;
+    chip.textContent=s.mode==='capture'?'captures → brain':'asks ← brain';
+    $('tw-brain').classList.add('pulse');
+    setTimeout(()=>$('tw-brain').classList.remove('pulse'),600);
+    $('tw-title').textContent=s.title;
+    $('tw-bubble').innerHTML=s.bubble;
+    $('tw-note').innerHTML=s.note;
+    $('tw-prev').disabled=(i===0); $('tw-next').disabled=(i===STEPS.length-1);
+    dots.forEach((d,n)=>d.classList.toggle('on',n===i));
+  }
+  $('tw-prev').onclick=()=>{if(i>0){i--;render();}};
+  $('tw-next').onclick=()=>{if(i<STEPS.length-1){i++;render();}};
+  render();
+})();
+</script>
+</body>
+</html>

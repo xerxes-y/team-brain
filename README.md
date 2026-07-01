@@ -16,6 +16,155 @@ base — bridging the product-owner ↔ developer gap.
 > graph, audit) as its storage engine. It does **not** ship its own store.
 > Full design: [`docs/team-brain.md`](docs/team-brain.md).
 
+## Why
+
+The tax isn't "we don't have enough docs" — it's **translation loss at the
+PO ↔ developer ↔ tester seam, repeated per ticket, with no durable record**. A
+PO and a dev spend 20 minutes on *why* a rule exists; that reasoning lives in
+two heads and an unsearchable scrollback. Three sprints later a different dev
+breaks it, or re-asks. The tester chases both people to reconcile expected vs
+actual behavior. When someone rotates off the team, the *why* leaves with
+them — the ticket and the diff survive, the reasoning doesn't.
+
+Confluence/Jira hold the *artifacts*; they don't hold the reasoning that
+connects them. That's the gap team-brain targets — it turns a recurring
+interruption into a cited, role-voiced query.
+
+**Honest caveat:** this only pays off if capture actually happens. It's not a
+search layer over docs you already have — it's a bet that automatic capture
+(connectors + `team_capture`) beats manual documentation, specifically at the
+PO/dev/tester handoff. Wire the connectors and use `team_capture` for real, or
+you've built a search engine over an empty store.
+
+## Architecture
+
+### System diagram (team-brain ↔ PostgreSQL ↔ LLM)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ IDE / MCP Client (Devin, IntelliJ, Claude)                                  │
+│  • team_assist(query, role)       ← the main entry point                     │
+│  • team_draft_ticket / team_explain_ticket / team_test_plan                  │
+│  • team_capture (push chat → memories)                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                       │
+                      ┌────────────────┴────────────────┐
+                      │                                 │
+                      ▼                                 ▼
+         ┌──────────────────────────┐    ┌──────────────────────┐
+         │     team-brain           │    │  Connectors (async)  │
+         │  (mcp_server.py)         │    │                      │
+         │                          │    │  • Jira ingester     │
+         │  1. RETRIEVE:            │    │  • Confluence sync   │
+         │     hybrid search        │    │  • PR miner          │
+         │     (RRF fusion)         │    │  • GitLab business   │
+         │                          │    │    rules extractor   │
+         │  2. FILTER:              │    │  • Devin/IntelliJ    │
+         │     ACL (fail-closed)    │    │    IDE activity tap  │
+         │                          │    │                      │
+         │  3. RERANK:              │    │  + team_capture      │
+         │     role tag/tier bias   │    │    (deliberate push) │
+         │                          │    └─────────┬────────────┘
+         │  4. SYNTHESIZE:          │              │
+         │     (optional)           │              │
+         │                          │              │
+         └──────────────┬───────────┘              │
+                        │                         │
+          ┌─────────────┴─────────────┐           │
+          │                           │           │
+          ▼                           ▼           ▼
+     ┌─────────────────────────────────────────────────┐
+     │      PostgreSQL (MemoryStorePG)                 │
+     │                                                 │
+     │  • memories table:                              │
+     │    - id, title, content (text)                  │
+     │    - embedding (pgvector 384/768/1024-d)        │
+     │    - tags (role, acl:group, src:url)            │
+     │    - tier (semantic/procedural/episodic)        │
+     │    - namespace (team-1, team-2, ...)            │
+     │                                                 │
+     │  • Search:                                      │
+     │    BM25 tsvector (lexical)                       │
+     │    + pgvector <=> (semantic ANN)                │
+     │    fused by RRF (reciprocal-rank fusion)        │
+     │                                                 │
+     └─────────────────────────────────────────────────┘
+                        │
+          ┌─────────────┤
+          │             │
+          │             ▼
+          │        ┌─────────────────┐
+          │        │   LLM (optional)│
+          │        │ TEAMBRAIN_SYNTH │
+          │        │                 │
+          │        │ • Claude        │
+          │        │ • OpenAI        │
+          │        │ • Local Ollama  │
+          │        │ • Company LLM   │
+          │        │                 │
+          │        │ Reads ranked    │
+          │        │ memories + cites│
+          │        └─────────────────┘
+          │             │
+          │ (no synth)  │ (with synth)
+          ▼             ▼
+      ┌────────────────────────────┐
+      │  Answer + citations        │
+      │                            │
+      │  Extractive (ranked snipps)│
+      │  OR                        │
+      │  Synthesized (LLM written) │
+      └────────────────────────────┘
+```
+
+### Data flow detail
+
+**Write path** (ingestion):
+```
+Jira ──────────┐
+Confluence ────├─→ connector (chunk + ACL + embed) ──→ PostgreSQL
+GitHub/GitLab ─┤   (connectors run passively or on-demand)
+IDE ───────────┤
+Chat ──────────→ team_capture (deliberate push)
+```
+
+**Read path** (retrieval):
+```
+Query (string)
+  ↓
+1. Embed query (same model as memories)
+  ↓
+2. PostgreSQL hybrid search:
+   • BM25 tsvector (keyword match)
+   • pgvector <=> (semantic similarity, ANN)
+   • RRF (blend rankings)
+  ↓
+3. team-brain ACL filter (fail-closed):
+   • Drop memories with acl:group tags unless asker is in group
+   • Public memories (no acl:* tag) always pass
+  ↓
+4. Soft rerank (role-aware):
+   • Boost memories tagged with role's tags
+   • Boost memories with role's preferred tiers
+   • Keep hybrid search order as tiebreaker
+  ↓
+5. Synthesize (optional):
+   • If LLM wired: read top-K memories, synthesize answer
+   • If no LLM: return ranked snippets + citations
+  ↓
+Answer + citations (id, title, source_url)
+```
+
+### Core architectural choices
+
+| Decision | Why | Tradeoff |
+|---|---|---|
+| **One namespace, roles as retrieval profiles** | Dev answer can pull PO's business rules; tester sees both sides. Bridges gap instead of rebuilding it. | Roles don't enforce separation; ACL does (fail-closed). |
+| **Connectors + capture, not manual docs** | Continuous ingestion beats write-once. Captures what teams already produce (Jira, PRs, chat). | Requires discipline; no capture → empty store. |
+| **Search first, synthesize second** | Retrieval bounds the LLM's context; wrong retrievals produce confident wrong answers. Extractive fallback works. | Smaller LLM calls (cheaper), but needs good search. |
+| **Postgres + pgvector, not SaaS vector DB** | Self-hosted, no API keys, data stays in control. Shared with memento engine. | Ops burden (Postgres admin), not serverless. |
+| **ACL as tags, not schema** | No schema changes to memento; connectors just add `acl:group` tags. Fail-closed default. | Tag-based is flexible but loose; need discipline. |
+
 ## What's here (v0.1 scaffold)
 
 ```
@@ -30,6 +179,7 @@ teambrain/
   connectors/gitlab.py     mine BUSINESS RULES from a GitLab codebase for the PO
   connectors/devin.py      ingest Devin CLI activity (sessions.db + JSON exports)
   connectors/intellij.py   ingest a local IntelliJ project: git commits + TODO/FIXME notes
+  connectors/openspec.py   ingest a repo's OpenSpec tree: proposals/specs/designs, ticket-tagged
   connectors/acp_tap.py    LIVE Devin (ACP) stdio tap -> records turns as they happen
   connectors/_text.py      shared chunk/slug helpers
 mcp_server.py              MCP: team_assist / team_remember / team_sources / team_sync
@@ -37,6 +187,7 @@ mcp_server.py              MCP: team_assist / team_remember / team_sources / tea
                                 / team_capture (push the important bits of a chat to the brain, tagged to a ticket)
                            MCP prompt `team-capture` -> `/team-capture` slash command in clients that render prompts
 teambrain/capture.py       deliberate end-of-work capture: chat -> memories (optional distill)
+teambrain/teams.py         Microsoft Teams outgoing-webhook bridge: read-only Q&A surface (HMAC, fail-closed ACL)
 bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows)
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
@@ -260,6 +411,13 @@ python3 -c "from teambrain.connectors.devin import sync; \
 python3 -c "from teambrain.connectors.intellij import sync; \
   print(sync('/path/to/intellij/project', namespace='team-eng'))"
 
+# OpenSpec — ingest a repo's openspec/ tree (no creds): proposal.md (why),
+#   specs (scenarios), design.md (how); tasks.md skipped. Jira keys in the
+#   change id/text -> ticket:<KEY> tags, so specs join the ticket's commits
+#   and captured chats. web_base turns src: back-links into full URLs.
+python3 -c "from teambrain.connectors.openspec import sync; \
+  print(sync('/path/to/repo', namespace='team-eng'))"
+
 # Devin LIVE — when the build persists nothing locally and only talks ACP.
 #   Both modes forward verbatim (Devin is unaffected) and record turns;
 #   --record dumps raw JSON-RPC frames (the schema sample) for tightening the parser.
@@ -283,6 +441,14 @@ python3 -m teambrain.connectors.acp_tap --namespace team-eng --record ~/devin-ac
 #     -> call the team_capture MCP tool with this chat's decisions/rules, ticket=<KEY>, role=...).
 #   Or /team-capture if the client renders MCP prompts as slash commands (Devin support: verify).
 #   Read it back the only meaningful way (embed+search+ACL, not raw SQL): team_assist.
+
+# Microsoft Teams — read-only Q&A bridge (stdlib, no Bot Framework SDK).
+#   Create an Outgoing Webhook in Teams, point it (via a reverse proxy) at this
+#   server, and set the token it generates. Askers are ACL-unknown (public
+#   memories only, fail-closed); TEAMBRAIN_TEAMS_GROUPS grants a channel more.
+#   Per-question role override: "@team-brain as tester: what should I test?"
+export TEAMBRAIN_TEAMS_SECRET=...   # TEAMBRAIN_TEAMS_ROLE / _GROUPS / _PORT optional
+python3 -m teambrain.teams
 
 # Real cited answers + sharp business extraction via Claude (else: extractive / heuristic)
 export TEAMBRAIN_SYNTH=teambrain.synth_claude:synth ANTHROPIC_API_KEY=...

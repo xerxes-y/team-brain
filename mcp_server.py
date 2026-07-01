@@ -81,11 +81,11 @@ TOOLS = [
     },
     {
         "name": "team_sync",
-        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin|intellij; key is the space key / project key / 'owner/repo' / 'group/project' / local project path (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity; intellij ingests a local IntelliJ project's git commits + TODO/FIXME notes (key=project path; optional web_base for commit back-links). Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
+        "description": "Run a deliberate connector ingest into a namespace. source=confluence|jira|pr|gitlab|devin|intellij|openspec; key is the space key / project key / 'owner/repo' / 'group/project' / local project path (omit for devin — it reads local Devin IDE transcripts). gitlab mines business rules from code for the PO; devin ingests Devin IDE user<->LLM activity; intellij ingests a local IntelliJ project's git commits + TODO/FIXME notes (key=project path; optional web_base for commit back-links); openspec ingests a repo's openspec/ tree — proposals, specs, designs — as ticket-tagged memories (key=repo path; optional web_base for file back-links). Needs the connector's env credentials. Resolves source ACL into acl:* tags (fail-closed).",
         "schema": {
             "type": "object",
             "properties": {
-                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin", "intellij"]},
+                "source": {"type": "string", "enum": ["confluence", "jira", "pr", "gitlab", "devin", "intellij", "openspec"]},
                 "key": {"type": "string", "description": "space key | project key | owner/repo | group/project | local project path (not used by devin)"},
                 "namespace": {"type": "string", "description": "team scope; omit to use the server's TEAMBRAIN_NAMESPACE default"},
                 "since": {"type": "string", "description": "incremental checkpoint (CQL/JQL date, ISO updated_at, ISO transcript time, or git date); not used by gitlab"},
@@ -232,6 +232,10 @@ def _team_sync(a: dict) -> str:
     elif source == "intellij":
         from teambrain.connectors.intellij import sync
         res = sync(key, ns, since=since, web_base=a.get("web_base"),
+                   acl_groups=a.get("groups"))
+    elif source == "openspec":
+        from teambrain.connectors.openspec import sync
+        res = sync(key, ns, web_base=a.get("web_base"),
                    acl_groups=a.get("groups"))
     else:
         return f"[team-brain] unknown source: {source}"

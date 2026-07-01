@@ -36,8 +36,14 @@ def _yes(prompt, default=False):
     return ans.startswith("y")
 
 
-def build_config(db, embed, synth, key, namespace=""):
-    """The (env, mcp-block) for the given choices — pure, so it's testable."""
+def build_config(db, embed, synth, key, namespace="", synth_url="",
+                 synth_model="", oidc_url="", oidc_body="", tls_insecure=False):
+    """The (env, mcp-block) for the given choices — pure, so it's testable.
+
+    ``synth``: "" / "claude" / "openai" (any OpenAI-compatible endpoint) /
+    "oidc" (OpenAI-compatible gateway behind a short-lived OIDC bearer).
+    Legacy bools still work (True == "claude")."""
+    synth = {True: "claude", False: ""}.get(synth, synth) or ""
     env = {}
     if db:
         env["MEMENTO_DB_URL"] = db
@@ -45,10 +51,26 @@ def build_config(db, embed, synth, key, namespace=""):
         env["TEAMBRAIN_NAMESPACE"] = namespace
     if embed and embed != "none":
         env["TEAMBRAIN_EMBED"] = embed
-    if synth:
+    if synth == "claude":
         env["TEAMBRAIN_SYNTH"] = "teambrain.synth_claude:synth"
         if key:
             env["ANTHROPIC_API_KEY"] = key
+    elif synth in ("openai", "oidc"):
+        mod = "synth_oidc" if synth == "oidc" else "synth_openai"
+        env["TEAMBRAIN_SYNTH"] = f"teambrain.{mod}:synth"
+        env["TEAMBRAIN_CODE_SUMMARY"] = f"teambrain.{mod}:summarize_code"
+        if synth_url:
+            env["OPENAI_BASE_URL"] = synth_url
+        if synth_model:
+            env["TEAMBRAIN_SYNTH_MODEL"] = synth_model
+        if key:
+            env["OPENAI_API_KEY"] = key
+        if synth == "oidc":
+            env["TEAMBRAIN_OIDC_TOKEN_URL"] = oidc_url
+            if oidc_body:
+                env["TEAMBRAIN_OIDC_BODY"] = oidc_body
+        if tls_insecure:
+            env["TEAMBRAIN_TLS_INSECURE"] = "1"
     server = {"command": "team-brain"}
     if env:
         server["env"] = env
@@ -60,10 +82,32 @@ def main(argv=None):
     db = _ask("Shared Postgres DSN (blank = local SQLite, solo trial)")
     namespace = _ask("Team namespace (your team/project scope, e.g. proset, payments)")
     embed = _ask("Embedder: local / openai / none", "local") if db else "none"
-    synth = _yes("Enable Claude-backed answers (TEAMBRAIN_SYNTH)?")
-    key = _ask("ANTHROPIC_API_KEY") if synth else ""
 
-    _env, block = build_config(db, embed, synth, key, namespace)
+    synth = _ask("Synthesis: none / claude / openai / oidc-gateway", "none").lower()
+    synth = {"oidc-gateway": "oidc"}.get(synth, synth)
+    if synth not in ("claude", "openai", "oidc"):
+        synth = ""
+    key = synth_url = synth_model = oidc_url = oidc_body = ""
+    tls_insecure = False
+    if synth == "claude":
+        key = _ask("ANTHROPIC_API_KEY")
+    elif synth in ("openai", "oidc"):
+        synth_url = _ask("Gateway base URL (ends in /v1)",
+                         "http://localhost:11434/v1")
+        synth_model = _ask("Model name", "llama3.1")
+        if synth == "oidc":
+            oidc_url = _ask("OIDC token URL (the issuer's /token endpoint)")
+            oidc_body = _ask(
+                "OIDC token request JSON",
+                '{"tenant_id":"team-brain","user_id":"team-brain","roles":["admin"]}')
+        else:
+            key = _ask("API key (blank if the endpoint needs none)")
+        tls_insecure = _yes("Accept self-signed TLS certs (TEST envs only)?")
+
+    _env, block = build_config(db, embed, synth, key, namespace,
+                               synth_url=synth_url, synth_model=synth_model,
+                               oidc_url=oidc_url, oidc_body=oidc_body,
+                               tls_insecure=tls_insecure)
     text = json.dumps(block, indent=2)
 
     out = os.path.abspath("team-brain.mcp.json")

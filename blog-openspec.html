@@ -502,6 +502,36 @@ export TEAMBRAIN_SYNTH=teambrain.synth_openai:synth OPENAI_BASE_URL=http://llm.i
 python3 -m teambrain.teams          <span class="tok-c"># then: @team-brain as tester: what should I test for PROSET-9913?</span></code></pre>
   </section>
 
+  <section id="credits">
+    <h2>Does it save LLM credit? — <span class="em">yes, by design</span></h2>
+    <p class="lead">The expensive way to answer "why does this rule exist?" with AI is to let an agent re-explore the codebase — dozens of tool calls, a frontier model, every question, every asker, every session. team-brain's read path was designed around the opposite: <strong>search first, synthesize second</strong>. Retrieval is free; the only paid call is the last, smallest step — and even that one is optional.</p>
+    <div class="grid two">
+      <div class="card">
+        <h3>1 · Finding knowledge costs zero credits</h3>
+        <p class="muted">Embeddings run locally (<code>sentence-transformers</code> on CPU/GPU) and keyword search is Postgres BM25. The entire search-rank-filter pipeline — the hard part — never touches a paid API.</p>
+      </div>
+      <div class="card">
+        <h3>2 · Retrieval bounds the prompt</h3>
+        <p class="muted">Synthesis reads the top-8 ranked snippets plus your question — roughly 2–4k tokens — not a repo dump. A prompt that small doesn't need a frontier model: a cheap or local model reads 8 snippets just fine.</p>
+      </div>
+      <div class="card">
+        <h3>3 · Many answers need no LLM at all</h3>
+        <p class="muted">With no synthesis model configured, <code>team_assist</code> returns the ranked snippets with citations — extractive, zero tokens. For "where is this decided?" lookups, that's often the whole answer.</p>
+      </div>
+      <div class="card">
+        <h3>4 · Capture once, serve forever</h3>
+        <p class="muted">An agent that re-derives context pays per asker, per session. A captured decision is distilled once (one small call — or a free offline heuristic) and then served to every future asker from the store.</p>
+      </div>
+    </div>
+    <table>
+      <tr><th>Answering "why do we match on the counterparty?"</th><th>Tokens</th><th>Model needed</th><th>Paid how often</th></tr>
+      <tr><td>IDE agent re-explores the codebase</td><td>~50–150k per question</td><td>frontier</td><td>every asker, every session</td></tr>
+      <tr><td>team-brain, synthesized answer</td><td>~2–4k</td><td>small / local / internal</td><td>per question</td></tr>
+      <tr><td>team-brain, extractive answer</td><td>0</td><td>none</td><td>never</td></tr>
+    </table>
+    <p class="muted">Honest accounting: code-mining (GitLab connector) and capture distillation each cost one small call when an LLM is wired — and both fall back to offline heuristics without one. Those are one-time write-path costs, amortized over every future read. The structural point: <strong>credits scale with question volume, not codebase size</strong> — and the model tier scales with an 8-snippet prompt, not with "understand the whole repo."</p>
+  </section>
+
   <section id="proposal">
     <h2>The proposal — <span class="em">step 1 already ships</span></h2>
     <ul class="feat">
@@ -630,8 +660,8 @@ python3 -c <span class="tok-s">"from teambrain.connectors.openspec import sync; 
 })();
 
 (function(){
-  // teamwork walkthrough: 5 steps, each = one person either capturing into or
-  // querying the shared brain. Directly enacts the two demo objections.
+  // teamwork walkthrough: 7 steps, each = one person either capturing into or
+  // querying the shared brain. Enacts the two demo objections + the vague-ticket problem.
   const STEPS = [
     {actor:'tw-po', mode:'capture',
      title:'Day 0 — the PO drafts the tickets from mined business rules, and captures his analysis',

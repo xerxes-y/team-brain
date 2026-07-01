@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import ssl
 import urllib.request
 
 from . import store as _store
@@ -54,7 +55,10 @@ def _chat(system: str, user: str, max_tokens: int = 1500) -> str:
         headers["Authorization"] = f"Bearer {key}"
     req = urllib.request.Request(base + "/chat/completions",
                                  data=json.dumps(body).encode(), headers=headers)
-    with urllib.request.urlopen(req, timeout=60) as r:
+    # TEAMBRAIN_TLS_INSECURE=1: accept self-signed certs (TEST gateways only).
+    ctx = (ssl._create_unverified_context()
+           if os.environ.get("TEAMBRAIN_TLS_INSECURE") == "1" else None)
+    with urllib.request.urlopen(req, timeout=60, context=ctx) as r:
         payload = json.loads(r.read().decode())
     return (payload["choices"][0]["message"]["content"] or "").strip()
 

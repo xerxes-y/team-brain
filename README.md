@@ -188,10 +188,13 @@ mcp_server.py              MCP: team_assist / team_remember / team_sources / tea
                            MCP prompt `team-capture` -> `/team-capture` slash command in clients that render prompts
 teambrain/capture.py       deliberate end-of-work capture: chat -> memories (optional distill)
 teambrain/teams.py         Microsoft Teams outgoing-webhook bridge: read-only Q&A surface (HMAC, fail-closed ACL)
+teambrain/demo.py          `team-brain demo` — cold-start sweep: ingest every repo under a directory
 bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows)
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
 docs/devin-mcp.md          add team-brain to Devin as an MCP server (clone -> config -> /team-capture)
+docs/team-demo-setup.md    2-3 people + shared Postgres + an internal Llama endpoint, step by step
+docs/teams-setup.md        wire the Microsoft Teams Q&A agent (outgoing webhook -> bridge)
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
 docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
 scripts/smoke_test.py      backend-agnostic first-local-test
@@ -309,6 +312,7 @@ seams degrade gracefully:
 | **No LLM at all** | (nothing) | extractive answers + heuristic code-mining — works offline, no keys |
 | **Local model** (no key, nothing leaves the box) | `TEAMBRAIN_SYNTH=teambrain.synth_openai:synth` + `OPENAI_BASE_URL=http://localhost:11434/v1` + `TEAMBRAIN_SYNTH_MODEL=llama3.1` | an Ollama/LM Studio/vLLM server |
 | **OpenAI / Azure / company gateway** | same `synth_openai` + `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | that endpoint |
+| **OIDC-token gateway** (enterprise AI hub, short-lived bearer) | `TEAMBRAIN_SYNTH=teambrain.synth_oidc:synth` + `TEAMBRAIN_OIDC_TOKEN_URL`/`_BODY` (+ `OPENAI_BASE_URL`) — auto-refreshes the token | the issuer + gateway |
 | **Anthropic** | `TEAMBRAIN_SYNTH=teambrain.synth_claude:synth` + `ANTHROPIC_API_KEY` | a Claude key |
 
 The same OpenAI-compatible backend can drive code→business extraction for the
@@ -340,6 +344,25 @@ And the unit suite (offline, SQLite-backed):
 ```bash
 MEMENTO_DB_URL="" python3 -m pytest -q
 ```
+
+## Every endpoint is configurable
+
+No URL is hardcoded — each service team-brain talks to comes from the env:
+
+| Service | Env var | Default |
+|---|---|---|
+| Postgres (store) | `MEMENTO_DB_URL` | local SQLite |
+| LLM gateway (synth + code mining) | `OPENAI_BASE_URL` | `api.openai.com/v1` |
+| OIDC issuer (short-lived gateway tokens) | `TEAMBRAIN_OIDC_TOKEN_URL` (+ `_BODY`, `_TTL`) | — |
+| Embedding server (when different from the LLM gateway) | `TEAMBRAIN_EMBED_BASE_URL` (+ `_API_KEY`) | falls back to `OPENAI_BASE_URL` |
+| Anthropic | `ANTHROPIC_BASE_URL` (SDK-native) | `api.anthropic.com` |
+| Jira | `JIRA_BASE_URL` | — |
+| Confluence | `CONFLUENCE_BASE_URL` | — |
+| GitLab | `GITLAB_BASE_URL` | `gitlab.com/api/v4` |
+| GitHub (incl. Enterprise) | `GITHUB_BASE_URL` | `api.github.com` |
+
+`team-brain init` collects the store, embedder, and LLM/OIDC values
+interactively and writes them into the MCP config, so nothing is typed twice.
 
 ## Access control (default)
 
@@ -411,6 +434,13 @@ python3 -c "from teambrain.connectors.devin import sync; \
 python3 -c "from teambrain.connectors.intellij import sync; \
   print(sync('/path/to/intellij/project', namespace='team-eng'))"
 
+# DEMO / cold start — pre-fill a namespace from EVERY git repo under a
+#   directory: commits + TODOs, OpenSpec trees, and business rules mined from
+#   local source (LLM if wired, offline heuristic otherwise; --max-files caps
+#   cost per repo). Optional --jira PROJ / --confluence SPACE / --github o/r
+#   run those connectors too (env creds). Per-repo failures don't stop the sweep.
+team-brain demo ~/IdeaProjects --namespace demo --jira PROSET
+
 # OpenSpec — ingest a repo's openspec/ tree (no creds): proposal.md (why),
 #   specs (scenarios), design.md (how); tasks.md skipped. Jira keys in the
 #   change id/text -> ticket:<KEY> tags, so specs join the ticket's commits
@@ -447,6 +477,7 @@ python3 -m teambrain.connectors.acp_tap --namespace team-eng --record ~/devin-ac
 #   server, and set the token it generates. Askers are ACL-unknown (public
 #   memories only, fail-closed); TEAMBRAIN_TEAMS_GROUPS grants a channel more.
 #   Per-question role override: "@team-brain as tester: what should I test?"
+#   Full wiring guide (webhook creation, HTTPS, security): docs/teams-setup.md
 export TEAMBRAIN_TEAMS_SECRET=...   # TEAMBRAIN_TEAMS_ROLE / _GROUPS / _PORT optional
 python3 -m teambrain.teams
 

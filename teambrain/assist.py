@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 
 from . import log as _log
 from .log import log
@@ -99,6 +100,31 @@ def _retrieve(query, profile, namespace, asker_groups, limit, overfetch=4,
     return _rerank(visible, profile, boost_tags)[:limit], hidden
 
 
+_STOP = {"the", "a", "an", "and", "or", "for", "of", "to", "in", "on", "at",
+         "is", "are", "was", "were", "do", "does", "did", "what", "which",
+         "how", "why", "when", "who", "we", "our", "your", "this", "that",
+         "it", "with", "about", "should", "can", "will"}
+
+
+def _terms(text) -> set:
+    return {w for w in re.findall(r"[a-z0-9][a-z0-9_-]+", str(text or "").lower())
+            if len(w) > 2 and w not in _STOP}
+
+
+def _relevance(query, rows) -> float:
+    """Best lexical overlap (0..1) between the query's content terms and any
+    row. A cheap miss detector for the NO-LLM path: hybrid search always
+    returns *something*, and without a synthesis model there is nothing
+    downstream to notice the top hits are noise. Lexical overlap under-scores
+    pure-semantic matches, so the gate only applies extractively, the default
+    threshold is low, and TEAMBRAIN_MIN_RELEVANCE=0 disables it."""
+    q = _terms(query)
+    if not q:
+        return 1.0
+    return max((len(q & _terms(f"{m.get('title', '')} {m.get('content', '')}"))
+                / len(q) for m in rows), default=0.0)
+
+
 def _synthesize(query, role, profile, rows):
     """Turn ranked memories into an answer. Override by setting
     ``TEAMBRAIN_SYNTH`` to ``module:function`` accepting (query, role, profile,
@@ -119,7 +145,8 @@ def _synthesize(query, role, profile, rows):
                         hook, exc)
     if not rows:
         return ("No knowledge found for this question. Nothing in the team brain "
-                "covers it yet — say so rather than guessing.")
+                "covers it yet — say so rather than guessing, and capture the "
+                "answer with team_capture once someone provides it.")
     lines = [f"(extractive answer — wire TEAMBRAIN_SYNTH for synthesis)",
              f"Top knowledge for a {role} on: {query}", ""]
     for i, m in enumerate(rows, 1):
@@ -145,6 +172,13 @@ def assist(query, role, namespace, asker_groups=None, limit=8, overfetch=4):
 
     ranked, hidden = _retrieve(query, profile, namespace, asker_groups, limit,
                                overfetch=overfetch)
+    if ranked and not os.environ.get("TEAMBRAIN_SYNTH"):
+        thr = float(os.environ.get("TEAMBRAIN_MIN_RELEVANCE") or 0.15)
+        rel = _relevance(query, ranked)
+        if thr > 0 and rel < thr:
+            log.debug("extractive miss: best relevance %.2f < %.2f — "
+                      "answering 'not covered' instead of weak snippets", rel, thr)
+            ranked = []
     return {
         "role": role,
         "query": query,

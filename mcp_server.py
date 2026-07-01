@@ -377,6 +377,9 @@ def main() -> int:
     if len(sys.argv) > 1 and sys.argv[1] == "init":
         from teambrain.init import main as _init
         return _init(sys.argv[2:])
+    if len(sys.argv) > 1 and sys.argv[1] == "demo":
+        from teambrain.demo import main as _demo
+        return _demo(sys.argv[2:])
     for line in sys.stdin:
         line = line.strip()
         if not line:

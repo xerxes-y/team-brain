@@ -26,9 +26,12 @@ Configuration (all optional; unset ⇒ no dense embedder ⇒ lexical search)::
     TEAMBRAIN_EMBED_MODEL    model name (preset/provider default otherwise)
     TEAMBRAIN_EMBED_DIM      output dimension (Matryoshka-truncated if supported)
     TEAMBRAIN_EMBED_DEVICE   cpu | cuda | mps   (local backend; auto-detected)
-    OPENAI_API_KEY           required when backend is openai (cloud)
-    OPENAI_BASE_URL          point the openai backend at any compatible server
-                             (Ollama / vLLM / TEI / Azure) — no key needed locally
+    TEAMBRAIN_EMBED_BASE_URL embed server URL; falls back to OPENAI_BASE_URL —
+                             set it when embeddings and chat use DIFFERENT servers
+    TEAMBRAIN_EMBED_API_KEY  embed server key; falls back to OPENAI_API_KEY.
+                             A key is only required for api.openai.com — local
+                             servers (Ollama / vLLM / TEI) run keyless
+    OPENAI_BASE_URL          shared default for any compatible server
 
 The point of the **profiles** is the demo → production path: start on `demo`
 (CPU, no key), then as you get a GPU flip ``TEAMBRAIN_EMBED_PROFILE`` to
@@ -87,12 +90,15 @@ class OpenAIEmbedder:
 
     def __init__(self, model=None, api_key=None, base_url=None, dim=None):
         self.model = model or "text-embedding-3-small"
-        self._key = api_key or os.environ.get("OPENAI_API_KEY", "")
-        if not self._key:
-            raise RuntimeError(
-                "OPENAI_API_KEY is required for TEAMBRAIN_EMBED=openai")
-        self._base = (base_url or os.environ.get("OPENAI_BASE_URL")
+        self._key = (api_key or os.environ.get("TEAMBRAIN_EMBED_API_KEY")
+                     or os.environ.get("OPENAI_API_KEY", ""))
+        self._base = (base_url or os.environ.get("TEAMBRAIN_EMBED_BASE_URL")
+                      or os.environ.get("OPENAI_BASE_URL")
                       or "https://api.openai.com/v1").rstrip("/")
+        if not self._key and "api.openai.com" in self._base:
+            raise RuntimeError(
+                "OPENAI_API_KEY (or TEAMBRAIN_EMBED_API_KEY) is required for "
+                "api.openai.com; local embed servers need a base URL instead")
         self.dim = int(dim) if dim else self._DIMS.get(self.model, 1536)
 
     def embed(self, text):
@@ -100,11 +106,12 @@ class OpenAIEmbedder:
         # Only v3 models honour a custom output dimension.
         if self.dim and self.model.startswith("text-embedding-3"):
             body["dimensions"] = self.dim
+        headers = {"Content-Type": "application/json"}
+        if self._key:
+            headers["Authorization"] = f"Bearer {self._key}"
         req = urllib.request.Request(
             self._base + "/embeddings",
-            data=json.dumps(body).encode(),
-            headers={"Authorization": f"Bearer {self._key}",
-                     "Content-Type": "application/json"},
+            data=json.dumps(body).encode(), headers=headers,
         )
         with urllib.request.urlopen(req, timeout=30) as r:
             payload = json.loads(r.read().decode())

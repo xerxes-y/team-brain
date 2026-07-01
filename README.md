@@ -194,6 +194,7 @@ roles.json                 role profiles (config, not code): tester / developer 
 docs/team-brain.md         the design + open decisions
 docs/devin-mcp.md          add team-brain to Devin as an MCP server (clone -> config -> /team-capture)
 docs/team-demo-setup.md    2-3 people + shared Postgres + an internal Llama endpoint, step by step
+docs/teams-setup.md        wire the Microsoft Teams Q&A agent (outgoing webhook -> bridge)
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
 docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
 scripts/smoke_test.py      backend-agnostic first-local-test
@@ -311,6 +312,7 @@ seams degrade gracefully:
 | **No LLM at all** | (nothing) | extractive answers + heuristic code-mining — works offline, no keys |
 | **Local model** (no key, nothing leaves the box) | `TEAMBRAIN_SYNTH=teambrain.synth_openai:synth` + `OPENAI_BASE_URL=http://localhost:11434/v1` + `TEAMBRAIN_SYNTH_MODEL=llama3.1` | an Ollama/LM Studio/vLLM server |
 | **OpenAI / Azure / company gateway** | same `synth_openai` + `OPENAI_API_KEY` (+ `OPENAI_BASE_URL`) | that endpoint |
+| **OIDC-token gateway** (enterprise AI hub, short-lived bearer) | `TEAMBRAIN_SYNTH=teambrain.synth_oidc:synth` + `TEAMBRAIN_OIDC_TOKEN_URL`/`_BODY` (+ `OPENAI_BASE_URL`) — auto-refreshes the token | the issuer + gateway |
 | **Anthropic** | `TEAMBRAIN_SYNTH=teambrain.synth_claude:synth` + `ANTHROPIC_API_KEY` | a Claude key |
 
 The same OpenAI-compatible backend can drive code→business extraction for the
@@ -456,6 +458,7 @@ python3 -m teambrain.connectors.acp_tap --namespace team-eng --record ~/devin-ac
 #   server, and set the token it generates. Askers are ACL-unknown (public
 #   memories only, fail-closed); TEAMBRAIN_TEAMS_GROUPS grants a channel more.
 #   Per-question role override: "@team-brain as tester: what should I test?"
+#   Full wiring guide (webhook creation, HTTPS, security): docs/teams-setup.md
 export TEAMBRAIN_TEAMS_SECRET=...   # TEAMBRAIN_TEAMS_ROLE / _GROUPS / _PORT optional
 python3 -m teambrain.teams
 

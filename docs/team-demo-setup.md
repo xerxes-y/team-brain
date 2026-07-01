@@ -45,6 +45,31 @@ def synth(query, role, profile, rows):
 
 — put it on `PYTHONPATH` and set `TEAMBRAIN_SYNTH=mysynth:synth`.
 
+### OIDC-token gateways (enterprise AI hubs) — supported out of the box
+
+Company gateways (e.g. an Envoy front for Llama) are often OpenAI-compatible
+but authenticate with a **short-lived bearer token** from an OIDC issuer — a
+static `OPENAI_API_KEY` would expire mid-session. Use the OIDC front instead
+of `synth_openai`; it fetches the token, caches it, and refreshes before the
+TTL runs out (default margin 50 min for a 1-hour token):
+
+```bash
+export TEAMBRAIN_SYNTH=teambrain.synth_oidc:synth
+export TEAMBRAIN_CODE_SUMMARY=teambrain.synth_oidc:summarize_code
+export OPENAI_BASE_URL=https://<gateway-host>/v1
+export TEAMBRAIN_SYNTH_MODEL=meta-llama/llama-3.1-8b-instruct
+export TEAMBRAIN_OIDC_TOKEN_URL=https://<issuer-host>/token
+export TEAMBRAIN_OIDC_BODY='{"tenant_id":"team-brain","user_id":"team-brain","roles":["admin"]}'
+export TEAMBRAIN_TLS_INSECURE=1     # TEST envs with self-signed certs ONLY
+```
+
+The issuer must return `{"access_token": "..."}`; `TEAMBRAIN_OIDC_TTL`
+(seconds) tunes the refresh margin. If the issuer is down, answers fall back
+to extractive with a visible warning — the demo can't hard-fail on auth.
+
+To verify such a gateway by hand, fetch a token first, then the curl above
+with `-H "Authorization: Bearer $TOKEN"` (add `-k` for self-signed certs).
+
 ## 1. One person: start the shared Postgres
 
 On the machine that will host the brain (a laptop is fine for a demo):

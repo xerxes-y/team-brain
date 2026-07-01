@@ -345,6 +345,25 @@ And the unit suite (offline, SQLite-backed):
 MEMENTO_DB_URL="" python3 -m pytest -q
 ```
 
+## Every endpoint is configurable
+
+No URL is hardcoded — each service team-brain talks to comes from the env:
+
+| Service | Env var | Default |
+|---|---|---|
+| Postgres (store) | `MEMENTO_DB_URL` | local SQLite |
+| LLM gateway (synth + code mining) | `OPENAI_BASE_URL` | `api.openai.com/v1` |
+| OIDC issuer (short-lived gateway tokens) | `TEAMBRAIN_OIDC_TOKEN_URL` (+ `_BODY`, `_TTL`) | — |
+| Embedding server (when different from the LLM gateway) | `TEAMBRAIN_EMBED_BASE_URL` (+ `_API_KEY`) | falls back to `OPENAI_BASE_URL` |
+| Anthropic | `ANTHROPIC_BASE_URL` (SDK-native) | `api.anthropic.com` |
+| Jira | `JIRA_BASE_URL` | — |
+| Confluence | `CONFLUENCE_BASE_URL` | — |
+| GitLab | `GITLAB_BASE_URL` | `gitlab.com/api/v4` |
+| GitHub (incl. Enterprise) | `GITHUB_BASE_URL` | `api.github.com` |
+
+`team-brain init` collects the store, embedder, and LLM/OIDC values
+interactively and writes them into the MCP config, so nothing is typed twice.
+
 ## Access control (default)
 
 ACL is encoded as `acl:<group>` **tags** — no change to memento's schema. A

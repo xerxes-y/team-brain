@@ -79,10 +79,12 @@ def ingest_pr(pr: dict, namespace: str, repo: str = "") -> int:
 
 class GitHubClient:
     """Thin GitHub REST client over stdlib ``urllib``. ``token`` (``GITHUB_TOKEN``)
-    is optional for public repos but recommended (rate limits / private access)."""
+    is optional for public repos but recommended (rate limits / private access).
+    ``GITHUB_BASE_URL`` points it at GitHub Enterprise (…/api/v3)."""
 
-    def __init__(self, token=None, base_url=GITHUB_API, timeout=30):
-        self.base_url = (base_url or GITHUB_API).rstrip("/")
+    def __init__(self, token=None, base_url=None, timeout=30):
+        self.base_url = (base_url or os.environ.get("GITHUB_BASE_URL")
+                         or GITHUB_API).rstrip("/")
         self.token = token if token is not None else os.environ.get("GITHUB_TOKEN")
         self.timeout = timeout
 

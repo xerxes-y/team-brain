@@ -193,6 +193,7 @@ bin/devin-acp-tapped[.cmd] IDE-launchable ACP tap wrapper (macOS/Linux + Windows
 roles.json                 role profiles (config, not code): tester / developer / po
 docs/team-brain.md         the design + open decisions
 docs/devin-mcp.md          add team-brain to Devin as an MCP server (clone -> config -> /team-capture)
+docs/team-demo-setup.md    2-3 people + shared Postgres + an internal Llama endpoint, step by step
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
 docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
 scripts/smoke_test.py      backend-agnostic first-local-test

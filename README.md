@@ -195,6 +195,7 @@ docs/team-brain.md         the design + open decisions
 docs/devin-mcp.md          add team-brain to Devin as an MCP server (clone -> config -> /team-capture)
 docs/team-demo-setup.md    2-3 people + shared Postgres + an internal Llama endpoint, step by step
 docs/teams-setup.md        wire the Microsoft Teams Q&A agent (outgoing webhook -> bridge)
+docs/proposal-msgraph.md   PROPOSAL: ingest Teams channels + meeting transcripts (Graph, read-only)
 docs/devin-acp-tap.md      Devin ACP tap wiring (macOS / Linux / Windows)
 docs/setup-gitlab.md       ingest company (self-hosted) GitLab on another machine
 scripts/smoke_test.py      backend-agnostic first-local-test
